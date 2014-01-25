@@ -26,4 +26,12 @@ public class TerrainType {
 		for (int i=0;i<8;i++) terrains[i]=new TerrainType(i,0);
 		return terrains;
 	}
+
+	public boolean isWater() {
+		return (id==WATER||id==BEACH||id==BRIDGE);
+	}
+
+	public boolean isLand() {
+		return id!=WATER;
+	}
 }

@@ -65,7 +65,8 @@ public class MainActivity extends ActionBarActivity {
             View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 			game=(GameView)rootView.findViewById(R.id.gameview);
 			String[] fileContents=FileUtils.readFile(getActivity(), "map1.txt");
-			TerrainMap map=new TerrainMap(fileContents);
+			TerrainMap map=new TerrainMap();
+			map.parseMapFile(fileContents);
 			Log.d("test","size "+map.width()+"/"+map.height());
 			game.setMap(map);
 
