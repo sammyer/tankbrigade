@@ -70,9 +70,14 @@ public abstract class BaseSurfaceView extends SurfaceView implements Runnable,Su
 		Log.i(TAG,"run");
 		while (running) {
 			if(holder.getSurface().isValid()){
-				Canvas canvas = holder.lockCanvas();
-				if (canvas!=null) drawSurface(canvas);
-				holder.unlockCanvasAndPost(canvas);			}
+				try {
+					Canvas canvas = holder.lockCanvas();
+					if (canvas!=null) drawSurface(canvas);
+					holder.unlockCanvasAndPost(canvas);
+				} catch (Exception e) {
+					Log.w(TAG,"Could not draw surface - "+e.toString());
+				}
+			}
 		}
 	}
 

@@ -11,6 +11,8 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import com.frozen.tankbrigade.map.GameUnit;
+import com.frozen.tankbrigade.map.MoveMap;
+import com.frozen.tankbrigade.map.MoveNode;
 import com.frozen.tankbrigade.map.PathFinder;
 import com.frozen.tankbrigade.map.TerrainMap;
 
@@ -45,7 +47,9 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	private RectF tileRect=new RectF();
 	private MapDrawer renderer=new MapDrawer();
 	private PathFinder pathFinder=new PathFinder();
-	private PathFinder.MoveMap selectedPos;
+	private MoveMap mapPaths;
+
+	private boolean uiEnabled=true;
 
 	private MultiTouchController<Object> multitouch=new MultiTouchController<Object>(this);
 
@@ -58,8 +62,19 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	@Override
 	protected void drawSurface(Canvas canvas) {
-	//protected void onDraw(Canvas canvas) {
-		renderer.drawMap(canvas,map,tileToScreen,selectedPos);
+		if (mapPaths!=null&&mapPaths.isAnimating()&&mapPaths.isAnimationComplete()) {
+			onAnimationComplete();
+		}
+		renderer.drawMap(canvas,map,tileToScreen, mapPaths);
+	}
+
+	private void onAnimationComplete() {
+		if (mapPaths==null||!mapPaths.isAnimating()||mapPaths.getSelectedMove()==null) return;
+		Point endPoint=mapPaths.getSelectedMove();
+		mapPaths.unit.x=endPoint.x;
+		mapPaths.unit.y=endPoint.y;
+		uiEnabled=true;
+		mapPaths=null;
 	}
 
 	//handle touch events
@@ -67,6 +82,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	@Override
 	public boolean onTouch(View view, MotionEvent motionEvent) {
+		if (!uiEnabled) return false;
 		if (tileToScreen==null) return true;
 
 		multitouch.onTouchEvent(motionEvent);
@@ -80,12 +96,20 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	private void onTileSelected(Point tilePos) {
 		Log.i(TAG,"onTileSelected "+tilePos);
 		GameUnit unit=map.getUnitAt(tilePos.x,tilePos.y);
-		GameUnit selectedUnit=(selectedPos==null?null:selectedPos.unit);
-		if (unit==selectedUnit) selectedPos=null;
-		else if (unit!=null) selectedPos=pathFinder.findLegalMoves(map,unit,tilePos.x,tilePos.y);
-		else if (selectedPos!=null) {
-			selectedPos.selectedMove=selectedPos.map[tilePos.x][tilePos.y];
-			if (selectedPos.selectedMove==null) selectedPos=null;
+		GameUnit selectedUnit=(mapPaths ==null?null: mapPaths.unit);
+		if (unit==selectedUnit) mapPaths =null;
+		else if (unit!=null) {
+			mapPaths=new MoveMap(pathFinder.findLegalMoves(map,unit,tilePos.x,tilePos.y),unit);
+		}
+		else if (mapPaths !=null) {
+			MoveNode selectedMove=mapPaths.map[tilePos.x][tilePos.y];
+			if (selectedMove==null) mapPaths=null;
+			else if (selectedMove==mapPaths.getSelectedMove()) {
+				mapPaths.animateMove(selectedMove);
+				uiEnabled=false;
+			} else {
+				mapPaths.showMove(selectedMove);
+			}
 		}
 	}
 
@@ -104,7 +128,11 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	@Override
 	public boolean setPositionAndScale(Object obj, PositionAndScale newObjPosAndScale, PointInfo touchPoint) {
 		tileToScreen.reset();
-		tileToScreen.setScale(newObjPosAndScale.getScale(),newObjPosAndScale.getScale());
+		float scale=newObjPosAndScale.getScale();
+		float maxScale=getWidth()/4;
+		if (scale<20) scale=20;
+		if (scale>maxScale) scale=maxScale;
+		tileToScreen.setScale(scale,scale);
 		tileToScreen.postTranslate(newObjPosAndScale.getXOff(),newObjPosAndScale.getYOff());
 		return true;
 	}

@@ -5,11 +5,13 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.Log;
 
 import com.frozen.tankbrigade.map.GameUnit;
-import com.frozen.tankbrigade.map.PathFinder;
+import com.frozen.tankbrigade.map.MoveMap;
+import com.frozen.tankbrigade.map.MoveNode;
 import com.frozen.tankbrigade.map.TerrainMap;
 import com.frozen.tankbrigade.map.TerrainType;
 
@@ -24,6 +26,7 @@ public class MapDrawer {
 
 	private Matrix screenToTile=new Matrix();
 	private RectF screenRect=new RectF();
+	private RectF mapBoundsRect=new RectF();
 	private TileRect drawRect=new TileRect();
 	private Paint paint=new Paint();
 
@@ -46,13 +49,17 @@ public class MapDrawer {
 		public void setTilePos(int x, int y) {
 			offsetTo(mapLeft+x*width(),mapTop+y*height());
 		}
+
+		public void setTilePos(float x, float y) {
+			offsetTo(mapLeft+x*width(),mapTop+y*height());
+		}
 	}
 
 	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen) {
 		drawMap(canvas, map, tileToScreen,null);
 	}
 
-	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen,PathFinder.MoveMap moves) {
+	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen,MoveMap moves) {
 		int w=canvas.getWidth();
 		int h=canvas.getHeight();
 		//Log.i(TAG, "drawSurface - map=" + map + "  view dims=" + w + "," + h);
@@ -61,14 +68,14 @@ public class MapDrawer {
 		screenRect.set(0, 0, w, h);
 
 		tileToScreen.invert(screenToTile);
-		screenToTile.mapRect(drawRect,screenRect);
-		int minX=(int)Math.floor(drawRect.left);
+		screenToTile.mapRect(mapBoundsRect,screenRect);
+		int minX=(int)Math.floor(mapBoundsRect.left);
 		if (minX<0) minX=0;
-		int maxX=(int)Math.ceil(drawRect.right);
+		int maxX=(int)Math.ceil(mapBoundsRect.right);
 		if (maxX>map.width()) maxX=map.width();
-		int minY=(int)Math.floor(drawRect.top);
+		int minY=(int)Math.floor(mapBoundsRect.top);
 		if (minY<0) minY=0;
-		int maxY=(int)Math.ceil(drawRect.bottom);
+		int maxY=(int)Math.ceil(mapBoundsRect.bottom);
 		if (maxY>map.width()) maxY=map.height();
 		//Log.d(TAG,"screenRect="+screenRect);
 		//Log.d(TAG,"drawRect="+drawRect);
@@ -86,25 +93,36 @@ public class MapDrawer {
 			}
 		}
 
+		GameUnit animatingUnit=null;
+		if (moves!=null&&moves.isAnimating()) animatingUnit=moves.unit;
 		for (GameUnit unit:map.getUnits()) {
-			if (unit.x<minX||unit.x>maxX||unit.y<minY||unit.y>maxY) continue;
-			drawRect.setTilePos(unit.x, unit.y);
-			drawUnit(canvas,unit,drawRect);
+			if (unit==animatingUnit) {
+				PointF unitPos=moves.getAnimationPosition().point;
+				drawRect.setTilePos(unitPos.x, unitPos.y);
+			} else {
+				drawRect.setTilePos(unit.x, unit.y);
+			}
+			if (RectF.intersects(drawRect,screenRect)) {
+				drawUnit(canvas,unit,drawRect);
+			}
 		}
 
-		if (moves!=null) {
+		if (moves!=null&&moves.getShowMoves()) {
 			int shadeId;
 			for (int tileX=minX;tileX<maxX;tileX++) {
 				for (int tileY=minY;tileY<maxY;tileY++) {
 					drawRect.setTilePos(tileX,tileY);
 					if (tileX==moves.unit.x&&tileY==moves.unit.y) shadeId=SHADE_SELECTED_UNIT;
-					if (moves.map[tileX][tileY]==null) shadeId=SHADE_INVALID;
-					else shadeId=SHADE_MOVE;
+					MoveNode move=moves.map[tileX][tileY];
+					if (move==null) shadeId=SHADE_INVALID;
+					else if (move.actionType== MoveNode.MOVE) shadeId=SHADE_MOVE;
+					else if (move.actionType== MoveNode.ATTACK) shadeId=SHADE_ATTACK;
+					else shadeId=SHADE_INVALID;
 					drawMoveOverlay(canvas, drawRect,shadeId);
 				}
 			}
 
-			if (moves.selectedMove!=null) drawMove(canvas, drawRect, moves.selectedMove);
+			if (moves.getShowPath()) drawMove(canvas, drawRect, moves.getSelectedMove());
 		}
 	}
 
@@ -119,7 +137,11 @@ public class MapDrawer {
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 		if (shadeId==SHADE_INVALID) {
-			paint.setColor(0xF0000000);
+			paint.setColor(0xE0000000);
+			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
+		}
+		if (shadeId==SHADE_ATTACK) {
+			paint.setColor(0xCCFF0000);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 		if (shadeId==SHADE_SELECTED_UNIT) {
@@ -128,19 +150,19 @@ public class MapDrawer {
 		}
 	}
 
-	private void drawMove(Canvas canvas, TileRect drawRect,PathFinder.MoveNode move) {
+	private void drawMove(Canvas canvas, TileRect drawRect,MoveNode move) {
 		paint.setStyle(Paint.Style.STROKE);
 		paint.setColor(0xFFFF0000);
 		paint.setStrokeWidth(drawRect.width()/3);
-		List<Point> pts=move.getPath();
+		Point[] pts=move.getPath();
 		Log.d(TAG,"drawMove "+pts);
-		if (pts.size()<2) return;
-		drawRect.setTilePos(pts.get(0).x,pts.get(0).y);
+		if (pts.length<2) return;
+		drawRect.setTilePos(pts[0].x,pts[0].y);
 		float sx=drawRect.centerX();
 		float sy=drawRect.centerY();
 		float ex,ey;
-		for (int i=1;i<pts.size();i++) {
-			drawRect.setTilePos(pts.get(i).x,pts.get(i).y);
+		for (int i=1;i<pts.length;i++) {
+			drawRect.setTilePos(pts[i].x,pts[i].y);
 			ex=drawRect.centerX();
 			ey=drawRect.centerY();
 			canvas.drawLine(sx,sy,ex,ey,paint);
@@ -168,4 +190,5 @@ public class MapDrawer {
 		if (tileX<0||tileY<0||tileX>=map.width()||tileY>=map.height()) return null;
 		return new Point(tileX,tileY);
 	}
+
 }
