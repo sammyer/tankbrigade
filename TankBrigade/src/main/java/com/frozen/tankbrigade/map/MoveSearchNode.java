@@ -2,23 +2,23 @@ package com.frozen.tankbrigade.map;
 
 import android.graphics.Point;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.frozen.tankbrigade.map.model.GameUnit;
+import com.frozen.tankbrigade.map.model.TerrainMap;
 
 /**
 * Created by sam on 26/01/14.
 */
-public class MoveNode extends Point {
+public class MoveSearchNode extends Point {
 	public static final int MOVE=0; //can move here
 	public static final int PASSTHROUGH=1; //can only pass through
 	public static final int ATTACK=2; //attack move
 
-	private MoveNode prev;
+	private MoveSearchNode prev;
 	private int cost;
 	public int totalCost;
 	public int actionType=MOVE;
 
-	MoveNode(int x, int y, MoveNode prev, int cost) {
+	MoveSearchNode(int x, int y, MoveSearchNode prev, int cost) {
 		this.x=x;
 		this.y=y;
 		this.prev = prev;
@@ -28,7 +28,7 @@ public class MoveNode extends Point {
 
 	public int getPathLength() {
 		int count=0;
-		MoveNode node=this;
+		MoveSearchNode node=this;
 		while (node!=null) {
 			count++;
 			node=node.prev;
@@ -36,9 +36,9 @@ public class MoveNode extends Point {
 		return count;
 	}
 
-	public Point[] getPath() {
+	protected Point[] getPath() {
 		Point[] path=new Point[getPathLength()];
-		MoveNode node=this;
+		MoveSearchNode node=this;
 		int i=path.length-1;
 		while (node!=null&&i>=0) {
 			path[i]=node;
@@ -46,6 +46,19 @@ public class MoveNode extends Point {
 			i--;
 		}
 		return path;
+	}
+
+	public UnitMove getMove(GameUnit unit, TerrainMap map) {
+		GameUnit enemyUnit=null;
+		Point[] path;
+		if (actionType==ATTACK) {
+			enemyUnit=map.getUnitAt(x,y);
+			if (prev==null) path=null;
+			else path=prev.getPath();
+		} else {
+			path=getPath();
+		}
+		return new UnitMove(unit,path,totalCost,enemyUnit);
 	}
 
 	@Override

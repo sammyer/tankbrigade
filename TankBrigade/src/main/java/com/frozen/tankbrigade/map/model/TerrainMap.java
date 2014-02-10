@@ -1,18 +1,18 @@
-package com.frozen.tankbrigade.map;
+package com.frozen.tankbrigade.map.model;
 
 import android.util.Log;
+import android.util.SparseArray;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by sam on 02/01/14.
  */
 public class TerrainMap {
-    private int[][] map;
-    private TerrainType[] terrains=TerrainType.getTerrainTypes();
-	private GameUnitType[] unitTypes=GameUnitType.getUnitTypes();
+    private TerrainType[][] map;
 	private List<GameUnit> units=new ArrayList<GameUnit>();
 
 	private static class StringIterator {
@@ -41,22 +41,22 @@ public class TerrainMap {
 		}
 	}
 
-	public void parseMapFile(String fileContents) {
-		parseMapFile(fileContents.split("\n"));
+	public void parseMapFile(String fileContents,GameData config) {
+		parseMapFile(fileContents.split("\n"),config);
 	}
 
-    public void parseMapFile(String[] fileContents) {
+    public void parseMapFile(String[] fileContents,GameData config) {
 		StringIterator lines=new StringIterator(fileContents);
 		String line;
 		units.clear();
 		while (lines.hasNext()) {
 			line=lines.get().trim();
 			if (line.contains("Map(")) {
-				parseTerrainMap(lines);
+				parseTerrainMap(lines,config.terrainTypes);
 				continue;
 			}
 			if (line.contains("Units(")) {
-				parseUnits(lines);
+				parseUnits(lines,config.gameUnittypes);
 				continue;
 			}
 			lines.next();
@@ -64,13 +64,18 @@ public class TerrainMap {
 		}
     }
 
-	private void parseTerrainMap(StringIterator lines) {
+	private void parseTerrainMap(StringIterator lines,List<TerrainType> terrainTypes) {
 		String line=lines.get();
 		String[] args=line.substring(line.indexOf("(")+1,line.indexOf(")")).split(",");
 
 		int w=Integer.parseInt(args[0]);
 		int h=Integer.parseInt(args[1]);
-		map=new int[w][h];
+		map=new TerrainType[w][h];
+
+		SparseArray<TerrainType> terrainMap=new SparseArray<TerrainType>(terrainTypes.size());
+		for (TerrainType terrain:terrainTypes) {
+			terrainMap.put(terrain.symbol,terrain);
+		}
 
 		int y=0;
 		while (lines.hasNext()&&y<h) {
@@ -78,17 +83,21 @@ public class TerrainMap {
 			if (line.startsWith(":")) break;
 			if (line.length()<w) continue;
 			for (int x=0;x<w;x++) {
-				map[x][y]=terrainId(line.charAt(x));
+				map[x][y]=terrainMap.get(line.charAt(x));
 			}
 			y++;
 		}
 	}
 
-	private void parseUnits(StringIterator lines) {
+	private void parseUnits(StringIterator lines,List<GameUnitType> unitTypes) {
 		String line=lines.get();
 		String arg=line.substring(line.indexOf("(") + 1, line.indexOf(")"));
 
 		int owner=Integer.parseInt(arg);
+		Map<String,GameUnitType> unitMap=new HashMap<String, GameUnitType>(unitTypes.size());
+		for (GameUnitType unitType:unitTypes) {
+			unitMap.put(unitType.name,unitType);
+		}
 
 		while (lines.hasNext()) {
 			line=lines.next().trim();
@@ -99,33 +108,11 @@ public class TerrainMap {
 			if (commapos<0||dashpos<0) continue;
 			int x=Integer.parseInt(line.substring(0,commapos).trim());
 			int y=Integer.parseInt(line.substring(commapos+1,dashpos).trim());
-			int unitId=getUnitId(line.substring(dashpos+1).trim().toLowerCase().charAt(0));
-			GameUnit unit=new GameUnit(unitTypes[unitId],x,y,owner);
-			Log.d("parse",line.substring(dashpos+1).trim().charAt(0)+" "+unitId+" "+unit.type);
+			String unitName=line.substring(dashpos+1).trim().toLowerCase();
+			GameUnit unit=new GameUnit(unitMap.get(unitName),x,y,owner);
+			Log.d("parse",line.substring(dashpos+1).trim().charAt(0)+" "+unitName+" "+unit.type);
 			units.add(unit);
 		}
-	}
-
-    private int terrainId(char c) {
-        if (c=='p') return TerrainType.PLAIN;
-        if (c=='h') return TerrainType.HILL;
-        if (c=='b') return TerrainType.BEACH;
-        if (c=='g') return TerrainType.BRIDGE;
-        if (c=='f') return TerrainType.FOREST;
-        if (c=='m') return TerrainType.MOUNTAIN;
-        if (c=='r') return TerrainType.ROAD;
-        if (c=='w') return TerrainType.WATER;
-        return 0;
-    }
-
-	private int getUnitId(char c) {
-		if (c=='a') return GameUnitType.AIRPLANE;
-		if (c=='b') return GameUnitType.BAZOOKA;
-		if (c=='c') return GameUnitType.COMMANDO;
-		if (c=='f') return GameUnitType.FLAK;
-		if (c=='r') return GameUnitType.ROCKET;
-		if (c=='t') return GameUnitType.TANK;
-		return 0;
 	}
 
 	public int width() {
@@ -140,9 +127,8 @@ public class TerrainMap {
 
 	public TerrainType getTerrain(int x, int y) {
 		try {
-			int terrainId=map[x][y];
-			return terrains[terrainId];
-		} catch (Exception e) {
+			return map[x][y];
+		} catch (ArrayIndexOutOfBoundsException e) {
 			return null;
 		}
 	}

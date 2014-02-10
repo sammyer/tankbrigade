@@ -1,6 +1,10 @@
 package com.frozen.tankbrigade.util;
 
 import android.content.Context;
+import android.text.TextUtils;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,7 +16,24 @@ import java.util.List;
  * Created by sam on 05/01/14.
  */
 public class FileUtils {
-	public static String[] readFile(Context context, String filename) {
+	public static JSONObject readJSONFile(Context context, String filename) {
+		String contents=readFile(context,filename);
+		if (contents==null) return null;
+		try {
+			JSONObject json=new JSONObject(contents);
+			return json;
+		} catch (JSONException e) {
+			return null;
+		}
+	}
+
+	public static String readFile(Context context, String filename) {
+		String[] lines=readFileLines(context,filename);
+		if (lines==null) return null;
+		return TextUtils.join("\n",lines);
+	}
+
+	public static String[] readFileLines(Context context, String filename) {
 		BufferedReader reader=null;
 		try {
 			reader = new BufferedReader(

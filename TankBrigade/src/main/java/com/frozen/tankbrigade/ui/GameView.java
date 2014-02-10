@@ -5,20 +5,28 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.frozen.tankbrigade.map.GameUnit;
-import com.frozen.tankbrigade.map.MoveMap;
-import com.frozen.tankbrigade.map.MoveNode;
-import com.frozen.tankbrigade.map.PathFinder;
-import com.frozen.tankbrigade.map.TerrainMap;
+import com.frozen.tankbrigade.map.MapDrawParameters;
+import com.frozen.tankbrigade.map.anim.MapAnimation;
+import com.frozen.tankbrigade.map.anim.SpriteAnimation;
+import com.frozen.tankbrigade.map.anim.UnitAnimation;
+import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
+import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameUnit;
+import com.frozen.tankbrigade.map.model.TerrainMap;
+import com.frozen.tankbrigade.map.UnitMove;
 
 import org.metalev.multitouch.controller.MultiTouchController;
 import org.metalev.multitouch.controller.MultiTouchController.PointInfo;
 import org.metalev.multitouch.controller.MultiTouchController.PositionAndScale;
+
+import java.util.Iterator;
 
 /**
  * Created by sam on 04/01/14.
@@ -39,43 +47,69 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		setOnTouchListener(this);
     }
 
+	public static interface GameViewListener {
+		public void onTileSelected(Point pos);
+		public void onAnimationComplete(MapAnimation animation, boolean allComplete);
+	}
+
 	public static final String TAG="GameView";
 
 	private TerrainMap map;
 	private Matrix tileToScreen;
 	private final static int tileSize=50;
 	private RectF tileRect=new RectF();
-	private MapDrawer renderer=new MapDrawer();
-	private PathFinder pathFinder=new PathFinder();
-	private MoveMap mapPaths;
+	private MapDrawer renderer;
+	private GameViewListener listener;
+	private MapDrawParameters drawParams =new MapDrawParameters();
 
 	private boolean uiEnabled=true;
 
 	private MultiTouchController<Object> multitouch=new MultiTouchController<Object>(this);
 
-	public void setMap(TerrainMap map) {
+	public void setMap(TerrainMap map,GameData config) {
+		renderer=new MapDrawer(getContext(),config);
 		this.map=map;
 		tileToScreen=new Matrix();
 		tileToScreen.setScale(tileSize,tileSize);
 		invalidate();
 	}
 
-	@Override
-	protected void drawSurface(Canvas canvas) {
-		if (mapPaths!=null&&mapPaths.isAnimating()&&mapPaths.isAnimationComplete()) {
-			onAnimationComplete();
-		}
-		renderer.drawMap(canvas,map,tileToScreen, mapPaths);
+	public void setListener(GameViewListener listener) {
+		this.listener=listener;
 	}
 
-	private void onAnimationComplete() {
-		if (mapPaths==null||!mapPaths.isAnimating()||mapPaths.getSelectedMove()==null) return;
-		Point endPoint=mapPaths.getSelectedMove();
-		mapPaths.unit.x=endPoint.x;
-		mapPaths.unit.y=endPoint.y;
-		uiEnabled=true;
-		mapPaths=null;
+	@Override
+	protected void drawSurface(Canvas canvas) {
+
+		synchronized (drawParams) {
+			if (drawParams!=null&&drawParams.isAnimating()) {
+				Log.d(TAG,"animation complete");
+				Iterator<MapAnimation> animationIterator=drawParams.getAnimations().iterator();
+				int animCount=drawParams.getAnimations().size();
+				while (animationIterator.hasNext()) {
+					final MapAnimation animation=animationIterator.next();
+					if (animation.isAnimationComplete()) {
+						animationIterator.remove();
+						animCount--;
+						final boolean animationsComplete=(animCount==0);
+						if (listener!=null) {
+							new Handler(Looper.getMainLooper()).post(new Runnable() {
+								@Override
+								public void run() {
+									listener.onAnimationComplete(animation,animationsComplete);
+								}
+							});
+						}
+					}
+				}
+				if (!drawParams.isAnimating()) uiEnabled=true;
+			}
+		}
+
+		MapDrawParameters drawParameters=this.drawParams.clone(); //to avoid concurrency issues
+		renderer.drawMap(canvas,map,tileToScreen, drawParameters);
 	}
+
 
 	//handle touch events
 
@@ -85,32 +119,16 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		if (!uiEnabled) return false;
 		if (tileToScreen==null) return true;
 
-		multitouch.onTouchEvent(motionEvent);
 		if (motionEvent.getActionMasked()==MotionEvent.ACTION_DOWN&&motionEvent.getActionIndex()==0) {
 			Point tilePos=renderer.getMapPosFromScreen(motionEvent.getX(),motionEvent.getY(),tileToScreen,map);
-			if (tilePos!=null) onTileSelected(tilePos);
-		}
-		return true;
-	}
-
-	private void onTileSelected(Point tilePos) {
-		Log.i(TAG,"onTileSelected "+tilePos);
-		GameUnit unit=map.getUnitAt(tilePos.x,tilePos.y);
-		GameUnit selectedUnit=(mapPaths ==null?null: mapPaths.unit);
-		if (unit==selectedUnit) mapPaths =null;
-		else if (unit!=null) {
-			mapPaths=new MoveMap(pathFinder.findLegalMoves(map,unit,tilePos.x,tilePos.y),unit);
-		}
-		else if (mapPaths !=null) {
-			MoveNode selectedMove=mapPaths.map[tilePos.x][tilePos.y];
-			if (selectedMove==null) mapPaths=null;
-			else if (selectedMove==mapPaths.getSelectedMove()) {
-				mapPaths.animateMove(selectedMove);
-				uiEnabled=false;
-			} else {
-				mapPaths.showMove(selectedMove);
+			if (tilePos!=null&&listener!=null) {
+				listener.onTileSelected(tilePos);
 			}
 		}
+
+		//check uienabled again in case animation was started
+		if (uiEnabled) multitouch.onTouchEvent(motionEvent);
+		return true;
 	}
 
 	@Override
@@ -139,6 +157,60 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	@Override
 	public void selectObject(Object obj, PointInfo touchPoint) {
-		Log.d(TAG,"selectObject");
+		//Log.d(TAG,"selectObject");
+	}
+
+
+	// ----------- UI ----------------
+
+	public void startAnimation() {
+		Log.d(TAG,"startAnimation");
+		uiEnabled=false;
+	}
+
+	public void clearPath() {
+		drawParams.selectedPath=null;
+		drawParams.selectedAttack=null;
+	}
+
+	public void setOverlay(short[][] overlay) {
+		drawParams.mapOverlay=overlay;
+	}
+
+	public void highlightPath(Point[] path,Point attack) {
+		drawParams.selectedPath=path;
+		drawParams.selectedAttack=attack;
+	}
+
+	public void animateMove(UnitMove move) {
+		UnitAnimation unitAnim=new UnitAnimation(move);
+		move.unit.setAnimation(unitAnim);
+		addAnimation(unitAnim);
+	}
+
+	public void animateAttack(UnitMove move) {
+		animateAttack(move,move.unit,move.getAttackPoint());
+	}
+
+	public void animateCounterattack(UnitMove move) {
+		animateAttack(move,move.attackTarget,move.unit.getPos());
+	}
+
+	private SpriteAnimation explosion;
+	protected void animateAttack(UnitMove move, GameUnit unit, Point target) {
+		UnitAttackAnimation unitAnim=new UnitAttackAnimation(move,unit);
+		unit.setAnimation(unitAnim);
+		addAnimation(unitAnim);
+		if (explosion==null) explosion=new SpriteAnimation(getContext(),
+				SpriteAnimation.EXPLOSION_RES,300,target);
+		explosion.setStartTime(200);
+		addAnimation(explosion);
+	}
+
+	protected void addAnimation(MapAnimation animation) {
+		uiEnabled=false;
+		synchronized (drawParams) {
+			drawParams.addAnimation(animation);
+		}
 	}
 }

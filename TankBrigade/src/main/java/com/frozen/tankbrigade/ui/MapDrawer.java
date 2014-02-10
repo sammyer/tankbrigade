@@ -1,5 +1,8 @@
 package com.frozen.tankbrigade.ui;
 
+import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -8,12 +11,17 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.Log;
+import android.util.SparseArray;
+import android.util.SparseIntArray;
 
-import com.frozen.tankbrigade.map.GameUnit;
-import com.frozen.tankbrigade.map.MoveMap;
-import com.frozen.tankbrigade.map.MoveNode;
-import com.frozen.tankbrigade.map.TerrainMap;
-import com.frozen.tankbrigade.map.TerrainType;
+import com.frozen.tankbrigade.map.MapDrawParameters;
+import com.frozen.tankbrigade.map.anim.MapAnimation;
+import com.frozen.tankbrigade.map.anim.SpriteAnimation;
+import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameUnit;
+import com.frozen.tankbrigade.map.model.TerrainMap;
+import com.frozen.tankbrigade.map.model.TerrainType;
+import com.frozen.tankbrigade.util.GeomUtils;
 
 import java.util.List;
 
@@ -21,19 +29,25 @@ import java.util.List;
  * Created by sam on 12/01/14.
  */
 public class MapDrawer {
-	private static final int[] terrainColors={0x88FF44,0x22EE22,0x008800,0xCCCCCC,0x444444,0x222233,0x2266FF,0xEEEEAA};
 	private static final String TAG="MapDrawer";
 
 	private Matrix screenToTile=new Matrix();
 	private RectF screenRect=new RectF();
 	private RectF mapBoundsRect=new RectF();
 	private TileRect drawRect=new TileRect();
+	private RectF subrect=new RectF();
 	private Paint paint=new Paint();
 
-	private static final int SHADE_INVALID=0;
-	private static final int SHADE_MOVE=1;
-	private static final int SHADE_ATTACK=2;
-	private static final int SHADE_SELECTED_UNIT=3;
+	private SparseIntArray terrainColorMap;
+
+	public MapDrawer(Context context, GameData config) {
+		terrainColorMap=new SparseIntArray(config.terrainTypes.size());
+		for (TerrainType terrain:config.terrainTypes) {
+			String colorName="terrainColor_"+terrain.name;
+			int color=context.getResources().getIdentifier(colorName,"color",context.getPackageName());
+			terrainColorMap.put(terrain.symbol,color);
+		}
+	}
 
 	private static class TileRect extends RectF {
 		private float mapLeft;
@@ -59,7 +73,7 @@ public class MapDrawer {
 		drawMap(canvas, map, tileToScreen,null);
 	}
 
-	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen,MoveMap moves) {
+	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen,MapDrawParameters params) {
 		int w=canvas.getWidth();
 		int h=canvas.getHeight();
 		//Log.i(TAG, "drawSurface - map=" + map + "  view dims=" + w + "," + h);
@@ -93,68 +107,67 @@ public class MapDrawer {
 			}
 		}
 
-		GameUnit animatingUnit=null;
-		if (moves!=null&&moves.isAnimating()) animatingUnit=moves.unit;
 		for (GameUnit unit:map.getUnits()) {
-			if (unit==animatingUnit) {
-				PointF unitPos=moves.getAnimationPosition().point;
-				drawRect.setTilePos(unitPos.x, unitPos.y);
-			} else {
-				drawRect.setTilePos(unit.x, unit.y);
-			}
+			PointF unitPos=unit.getAnimationPos().point;
+			drawRect.setTilePos(unitPos.x,unitPos.y);
 			if (RectF.intersects(drawRect,screenRect)) {
 				drawUnit(canvas,unit,drawRect);
+				if (unit.health<unit.type.health) {
+					float healthPercent=unit.health/(float)unit.type.health;
+					drawUnitHealthBar(canvas,healthPercent,drawRect);
+				}
 			}
 		}
 
-		if (moves!=null&&moves.getShowMoves()) {
-			int shadeId;
+		if (params==null) return;
+
+		if (params.showMoves()) {
 			for (int tileX=minX;tileX<maxX;tileX++) {
 				for (int tileY=minY;tileY<maxY;tileY++) {
 					drawRect.setTilePos(tileX,tileY);
-					if (tileX==moves.unit.x&&tileY==moves.unit.y) shadeId=SHADE_SELECTED_UNIT;
-					MoveNode move=moves.map[tileX][tileY];
-					if (move==null) shadeId=SHADE_INVALID;
-					else if (move.actionType== MoveNode.MOVE) shadeId=SHADE_MOVE;
-					else if (move.actionType== MoveNode.ATTACK) shadeId=SHADE_ATTACK;
-					else shadeId=SHADE_INVALID;
-					drawMoveOverlay(canvas, drawRect,shadeId);
+					drawMoveOverlay(canvas, drawRect,params.mapOverlay[tileX][tileY]);
 				}
 			}
-
-			if (moves.getShowPath()) drawMove(canvas, drawRect, moves.getSelectedMove());
+		}
+		if (params.showPath()) drawMove(canvas, drawRect, params.getSelectedPath());
+		if (params.selectedAttack!=null) drawAttack(canvas,drawRect,params.selectedAttack);
+		for (MapAnimation animation:params.getAnimations()) {
+			if (animation instanceof SpriteAnimation) {
+				drawAnimation(canvas, drawRect, (SpriteAnimation) animation);
+			}
 		}
 	}
 
 	private void drawTerrain(Canvas canvas, RectF rect, TerrainType terrain) {
-		paint.setColor(0xFF000000+terrainColors[terrain.id]);
+		paint.setColor(terrainColorMap.get(terrain.symbol));
 		canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 	}
 
 	private void drawMoveOverlay(Canvas canvas, RectF rect, int shadeId) {
-		if (shadeId==SHADE_MOVE) {
+		paint.setStyle(Paint.Style.FILL);
+		if (shadeId== MapDrawParameters.SHADE_MOVE) {
 			paint.setColor(0x88FFFFFF);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
-		if (shadeId==SHADE_INVALID) {
+		if (shadeId== MapDrawParameters.SHADE_INVALID) {
 			paint.setColor(0xE0000000);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
-		if (shadeId==SHADE_ATTACK) {
+		if (shadeId== MapDrawParameters.SHADE_ATTACK) {
 			paint.setColor(0xCCFF0000);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
-		if (shadeId==SHADE_SELECTED_UNIT) {
+		if (shadeId== MapDrawParameters.SHADE_SELECTED_UNIT) {
 			paint.setColor(0xCCFFFFFF);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 	}
 
-	private void drawMove(Canvas canvas, TileRect drawRect,MoveNode move) {
+	private void drawMove(Canvas canvas, TileRect drawRect,Point[] pts) {
 		paint.setStyle(Paint.Style.STROKE);
-		paint.setColor(0xFFFF0000);
+		paint.setColor(0xFF2266FF);
 		paint.setStrokeWidth(drawRect.width()/3);
-		Point[] pts=move.getPath();
+
 		Log.d(TAG,"drawMove "+pts);
 		if (pts.length<2) return;
 		drawRect.setTilePos(pts[0].x,pts[0].y);
@@ -171,14 +184,45 @@ public class MapDrawer {
 		}
 	}
 
-	private static final String[] unitchars={"C","B","F","T","R","A"};
+	private void drawAttack(Canvas canvas, TileRect drawRect,Point pos) {
+		paint.setStyle(Paint.Style.STROKE);
+		paint.setColor(0xFFFF8800);
+		paint.setStrokeWidth(2);
+		drawRect.setTilePos(pos.x,pos.y);
+		canvas.drawCircle(drawRect.centerX(),drawRect.centerY(),drawRect.width()*0.45f,paint);
+	}
+
+	private void drawAnimation(Canvas canvas, TileRect drawRect,SpriteAnimation animation) {
+		Bitmap bitmap=animation.getBitmap();
+		if (bitmap==null) return;
+		drawRect.setTilePos(animation.position.x,animation.position.y);
+		canvas.drawBitmap(bitmap,drawRect.left,drawRect.top,null);
+	}
+
 	private void drawUnit(Canvas canvas, GameUnit unit, RectF rect) {
-		String s=unitchars[unit.type.type];
+		String s=Character.toString(unit.type.symbol);
+		paint.setStyle(Paint.Style.FILL);
 		paint.setTextSize(rect.width());
 		paint.setTextAlign(Paint.Align.CENTER);
 		paint.setColor(unit.ownerId==1?0xFFFF0000:0xFF4444FF);
 		float textHeight=paint.descent() + paint.ascent();
 		canvas.drawText(s,rect.centerX(),rect.centerY()-textHeight/2,paint);
+	}
+
+	private RectF subrect2=new RectF();
+	private void drawUnitHealthBar(Canvas canvas, float percent, RectF rect) {
+		subrect.set(0.7f,0.05f,0.95f,0.55f);
+		GeomUtils.transformRect(rect, subrect);
+		subrect2.set(0, 1 - percent, 1, 1);
+		GeomUtils.transformRect(subrect,subrect2);
+		paint.setStyle(Paint.Style.FILL);
+		paint.setColor(0xFF000000+GeomUtils.interpolateColor(0xFF0000,0x00AA00,percent));
+		canvas.drawRect(subrect2, paint);
+
+		paint.setStyle(Paint.Style.STROKE);
+		paint.setStrokeWidth(drawRect.width()*0.025f);
+		paint.setColor(0xFF000000);
+		canvas.drawRect(subrect,paint);
 	}
 
 	public Point getMapPosFromScreen(float screenX, float screenY, Matrix tileToScreen, TerrainMap map) {

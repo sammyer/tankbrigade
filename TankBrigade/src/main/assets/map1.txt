@@ -24,7 +24,7 @@ frrrwrmpfp
 :Units(2):
 2,9 - commando
 3,9 - bazooka
-4,8 - flak tank
+4,8 - flak
 5,9 - commando
 7,9 - tank
 8,8 - tank
