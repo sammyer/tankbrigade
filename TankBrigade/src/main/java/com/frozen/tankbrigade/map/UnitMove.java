@@ -16,6 +16,7 @@ public class UnitMove {
 	public int movementCost;
 
 	public UnitMove(GameUnit unit, Point[] path, int movementCost, GameUnit attackTarget) {
+		if (path!=null&&path.length==0) path=null;
 		this.path = path;
 		this.movementCost=movementCost;
 		this.unit = unit;
@@ -32,5 +33,7 @@ public class UnitMove {
 		else return attackTarget.getPos();
 	}
 
-
+	public String toString() {
+		return "[UnitMove unit="+unit.toString()+" moveTo="+getEndPoint()+" attackTarget="+attackTarget+"]";
+	}
 }

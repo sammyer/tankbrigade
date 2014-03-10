@@ -32,7 +32,7 @@ public class JSONParser {
 		try {
 			obj = clazz.newInstance();
 		} catch (Exception e) {
-			if (DEBUG) Log.e(TAG,"jpt err - "+e.toString());
+			logException(e);
 			return null;
 		}
 		for (Field field:clazz.getDeclaredFields()) {
@@ -51,11 +51,17 @@ public class JSONParser {
 			else if (fieldData.type==FieldType.CLASS) parseClassField(json, obj, fieldData);
 			else if (fieldData.type==FieldType.LIST) parseListField(json, obj, fieldData);
 			else if (fieldData.type==FieldType.ARRAY) parseArrayField(json, obj, fieldData);
+			else if (fieldData.type==FieldType.JSON) parseJsonField(json, obj, fieldData);
 		} catch (JSONException e) {
-			if (DEBUG) Log.e(TAG,"jpt err - "+e.toString());
+			logException(e);
 		} catch (Exception e) {
-			if (DEBUG) Log.e(TAG,"jpt err - "+e.toString());
+			logException(e);
 		}
+	}
+
+	private static void logException(Exception e) {
+		if (DEBUG) Log.e(TAG,"jpt errx - "+e.toString());
+		e.printStackTrace();
 	}
 
 	private static void parsePrimitiveField(JSONObject json, Object obj, FieldStruct field)
@@ -64,11 +70,6 @@ public class JSONParser {
 		field.field.setAccessible(true);
 		if (field.clazz.equals(int.class)) {
 			field.field.set(obj, json.getInt(field.name));
-		} else if (field.clazz.equals(char.class)) {
-			String s=json.getString(field.name);
-			if (s!=null&&s.length()>0) field.field.set(obj, s.charAt(0));
-		} else if (field.clazz.equals(short.class)) {
-			field.field.set(obj, (short)json.getInt(field.name));
 		} else if (field.clazz.equals(long.class)) {
 			field.field.set(obj, json.getLong(field.name));
 		} else if (field.clazz.equals(float.class)) {
@@ -77,8 +78,19 @@ public class JSONParser {
 			field.field.set(obj, json.getDouble(field.name));
 		} else if (field.clazz.equals(boolean.class)) {
 			field.field.set(obj, json.getBoolean(field.name));
-		} else {
-			field.field.set(obj, json.get(field.name));
+		} else if (field.clazz.equals(short.class)) {
+			field.field.set(obj, (short)json.getInt(field.name));
+		} else if (field.clazz.equals(char.class)) {
+			String s=json.getString(field.name);
+			if (s!=null&s.length()>0) field.field.set(obj, s.charAt(0));
+		} else if (field.clazz.equals(byte.class)) {
+			field.field.set(obj, (byte)json.getInt(field.name));
+		} else if (field.clazz.equals(String.class)) {
+			field.field.set(obj, json.getString(field.name));
+		}
+
+		else {
+			field.field.set(obj, parseBoxedPrimitive(json, field.name, field.clazz));
 		}
 
 	}
@@ -92,6 +104,15 @@ public class JSONParser {
 		field.field.set(obj, parseClass(childJson,field.clazz));
 	}
 
+	private static void parseJsonField(JSONObject json, Object obj, FieldStruct field)
+			throws JSONException, IllegalArgumentException, IllegalAccessException {
+		if (DEBUG) Log.i(TAG, "parseClassField "+field.name);
+		JSONObject childJson;
+		childJson=json.getJSONObject(field.name);
+		field.field.setAccessible(true);
+		field.field.set(obj, childJson);
+	}
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private static void parseListField(JSONObject json, Object obj, FieldStruct field)
 			throws IllegalArgumentException, IllegalAccessException, JSONException {
@@ -100,49 +121,135 @@ public class JSONParser {
 		jsonarr=json.getJSONArray(field.name);
 		int arrlen=jsonarr.length();
 		ArrayList list=new ArrayList();
+
+		boolean isBoxedPrimitive=FieldStruct.isPrimitive(field.clazz);
 		for (int i=0;i<arrlen;i++) {
-			JSONObject jsonobj;
-			jsonobj = (JSONObject)jsonarr.get(i);
-			if (jsonobj==null) continue;
-			list.add(parseClass(jsonobj,field.clazz));
+			if (isBoxedPrimitive) {
+				list.add(parseBoxedPrimitive(jsonarr, i, field.clazz));
+			}
+			else {
+				JSONObject jsonobj;
+				jsonobj = (JSONObject)jsonarr.get(i);
+				if (jsonobj==null) continue;
+				list.add(parseClass(jsonobj,field.clazz));
+			}
 		}
 		field.field.setAccessible(true);
 		field.field.set(obj, list);
 	}
 
+
+	private static Object parseBoxedPrimitive(JSONArray jsonarr, int i, Class<?> clazz) throws JSONException {
+		if (clazz.equals(String.class)) {
+			return jsonarr.getString(i);
+		} if (clazz.equals(Integer.class)) {
+			return Integer.valueOf(jsonarr.getInt(i));
+		} else if (clazz.equals(Float.class)) {
+			return Float.valueOf((float)jsonarr.getDouble(i));
+		} else if (clazz.equals(Double.class)) {
+			return Double.valueOf(jsonarr.getDouble(i));
+		} else if (clazz.equals(Long.class)) {
+			return Long.valueOf(jsonarr.getLong(i));
+		} else if (clazz.equals(Short.class)) {
+			return Short.valueOf((short)jsonarr.getInt(i));
+		} else if (clazz.equals(Byte.class)) {
+			return Byte.valueOf((byte)jsonarr.getInt(i));
+		} else if (clazz.equals(Character.class)) {
+			String s=jsonarr.getString(i);
+			if (s!=null&s.length()>0) {
+				return Character.valueOf(s.charAt(0));
+			}
+		} else if (clazz.equals(Boolean.class)) {
+			return Boolean.valueOf(jsonarr.getBoolean(i));
+		}
+		throw new JSONException("parseBoxedPrimitive :: type not handled");
+	}
+
+	private static Object parseBoxedPrimitive(JSONObject json, String fieldName, Class<?> clazz) throws JSONException {
+		if (clazz.equals(String.class)) {
+			return json.get(fieldName);
+		} else if (clazz.equals(Integer.class)) {
+			return Integer.valueOf(json.getInt(fieldName));
+		} else if (clazz.equals(Long.class)) {
+			return Long.valueOf(json.getLong(fieldName));
+		} else if (clazz.equals(Float.class)) {
+			return Float.valueOf((float)json.getDouble(fieldName));
+		} else if (clazz.equals(Double.class)) {
+			return Double.valueOf(json.getDouble(fieldName));
+		} else if (clazz.equals(Boolean.class)) {
+			return Boolean.valueOf(json.getBoolean(fieldName));
+		} else if (clazz.equals(Short.class)) {
+			return Short.valueOf((short)json.getInt(fieldName));
+		} else if (clazz.equals(Character.class)) {
+			String s=json.getString(fieldName);
+			if (s!=null&s.length()>0) return Character.valueOf(s.charAt(0));
+		} else if (clazz.equals(Byte.class)) {
+			return Byte.valueOf((byte)json.getInt(fieldName));
+		}
+		throw new JSONException("parseBoxedPrimitive :: type not handled");
+	}
+
+
 	private static void parseArrayField(JSONObject json, Object obj, FieldStruct field)
 			throws IllegalArgumentException, IllegalAccessException, JSONException {
-		if (DEBUG) Log.i(TAG, "parseArrayField "+field.name);
+		if (DEBUG) Log.i(TAG, "parseArrayField "+field.name+" cl="+field.clazz);
 		JSONArray jsonarr;
 		jsonarr=json.getJSONArray(field.name);
+		field.field.setAccessible(true);
 
 		int arrlen=jsonarr.length();
 		Object arr=Array.newInstance(field.clazz, arrlen);
 		for (int i=0;i<arrlen;i++) {
-			if (field.clazz.equals(int.class)) {
-				Array.set(arr, i, jsonarr.getInt(i));
-			} else if (field.clazz.equals(char.class)) {
-				String s=jsonarr.getString(i);
-				if (s!=null&&s.length()>0) Array.set(arr, i, s.charAt(0));
-			} else if (field.clazz.equals(short.class)) {
-				Array.set(arr, i, (short)jsonarr.getInt(i));
-			} else if (field.clazz.equals(long.class)) {
-				Array.set(arr, i, jsonarr.getLong(i));
-			} else if (field.clazz.equals(float.class)) {
-				Array.set(arr, i, (float)jsonarr.getDouble(i));
-			} else if (field.clazz.equals(double.class)) {
-				Array.set(arr, i, jsonarr.getDouble(i));
-			} else {
-				Array.set(arr, i, jsonarr.get(i));
-			}
+			parseArrayFieldAux(arr, jsonarr, i, field.clazz);
 		}
-		field.field.setAccessible(true);
+
+
 		field.field.set(obj, arr);
+	}
+
+	private static void parseArrayFieldAux(Object arr, JSONArray jsonarr, int i, Class<?> clazz)
+			throws ArrayIndexOutOfBoundsException, IllegalArgumentException, JSONException {
+		if (clazz.equals(int.class)) {
+			Array.setInt(arr, i, jsonarr.getInt(i));
+		} else if (clazz.equals(float.class)) {
+			Array.setFloat(arr, i, (float)jsonarr.getDouble(i));
+		} else if (clazz.equals(double.class)) {
+			Array.setDouble(arr, i, jsonarr.getDouble(i));
+		} else if (clazz.equals(long.class)) {
+			Array.setLong(arr, i, jsonarr.getLong(i));
+		} else if (clazz.equals(short.class)) {
+			Array.setShort(arr, i, (short)jsonarr.getInt(i));
+		} else if (clazz.equals(byte.class)) {
+			Array.setByte(arr, i, (byte)jsonarr.getInt(i));
+		} else if (clazz.equals(char.class)) {
+			String s=jsonarr.getString(i);
+			if (s!=null&s.length()>0) Array.setChar(arr, i, s.charAt(0));
+		} else if (clazz.equals(boolean.class)) {
+			Array.setBoolean(arr, i, jsonarr.getBoolean(i));
+		} else if (clazz.equals(String.class)) {
+			Array.set(arr, i, jsonarr.getString(i));
+		}
+
+		else if (clazz.isArray()) {
+//multidimensional arrays
+			JSONArray subJsonArr=jsonarr.getJSONArray(i);
+			Class<?> subclazz=clazz.getComponentType();
+			Object subarr=Array.newInstance(subclazz, subJsonArr.length());
+			for (int j=0;j<subJsonArr.length();j++) {
+				parseArrayFieldAux(subarr, subJsonArr, j, subclazz);
+			}
+			Array.set(arr, i, subarr);
+		} else if (FieldStruct.isPrimitive(clazz)) {
+			Array.set(arr, i, parseBoxedPrimitive(jsonarr, i, clazz));
+		} else {
+			JSONObject obj=(JSONObject)jsonarr.get(i);
+			if (obj!=null) Array.set(arr, i, parseClass(obj,clazz));
+		}
 	}
 
 
 	private enum FieldType {
-		PRIMITIVE,LIST,ARRAY,CLASS
+		PRIMITIVE,LIST,ARRAY,CLASS,JSON
 	}
 
 	private static class FieldStruct {
@@ -151,11 +258,15 @@ public class JSONParser {
 		public FieldType type;
 		public Class<?> clazz;
 
+		private static final Class<?>[] primitiveClasses={
+				Boolean.class,Byte.class,Short.class,Integer.class,Long.class,
+				Float.class,Double.class,Character.class,String.class};
+
 		public FieldStruct(Field field) {
 			this.field=field;
 			name=field.getName();
 			clazz=field.getType();
-			if (clazz.isPrimitive()||clazz.equals(String.class)) {
+			if (isPrimitive(clazz)) {
 				type=FieldType.PRIMITIVE;
 			}
 			else if (clazz.isArray()) {
@@ -163,7 +274,6 @@ public class JSONParser {
 				clazz=clazz.getComponentType();
 			} else if (clazz.isAssignableFrom(ArrayList.class)) {
 				type=FieldType.LIST;
-				clazz=clazz.getComponentType();
 				try {
 					ParameterizedType ptype=(ParameterizedType)field.getGenericType();
 					clazz=(Class<?>) ptype.getActualTypeArguments()[0];
@@ -171,9 +281,18 @@ public class JSONParser {
 					clazz=null;
 				}
 			}
+			else if (clazz.isAssignableFrom(JSONObject.class)) {
+				type=FieldType.JSON;
+			}
 			else type=FieldType.CLASS;
 		}
+
+		private static boolean isPrimitive(Class<?> clazz) {
+			if (clazz.isPrimitive()) return true;
+			for (Class<?> pclazz:primitiveClasses) {
+				if (clazz==pclazz) return true;
+			}
+			return false;
+		}
 	}
-
-
 }

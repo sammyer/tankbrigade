@@ -1,7 +1,6 @@
 package com.frozen.tankbrigade.ui;
 
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -11,7 +10,6 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.Log;
-import android.util.SparseArray;
 import android.util.SparseIntArray;
 
 import com.frozen.tankbrigade.map.MapDrawParameters;
@@ -19,11 +17,9 @@ import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
-import com.frozen.tankbrigade.map.model.TerrainMap;
+import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.TerrainType;
 import com.frozen.tankbrigade.util.GeomUtils;
-
-import java.util.List;
 
 /**
  * Created by sam on 12/01/14.
@@ -39,12 +35,18 @@ public class MapDrawer {
 	private Paint paint=new Paint();
 
 	private SparseIntArray terrainColorMap;
+	private int moveOverlayColor=0x88FFFFFF;
+	private int attackOverlayColor=0xCCFF0000;
+	private int invalidOverlayColor=0xA0000000;
+	private int selectedOverlayColor=0xCCFFFFFF;
 
 	public MapDrawer(Context context, GameData config) {
 		terrainColorMap=new SparseIntArray(config.terrainTypes.size());
 		for (TerrainType terrain:config.terrainTypes) {
 			String colorName="terrainColor_"+terrain.name;
-			int color=context.getResources().getIdentifier(colorName,"color",context.getPackageName());
+			int colorId=context.getResources().getIdentifier(colorName,"color",context.getPackageName());
+			int color=context.getResources().getColor(colorId);
+			Log.d(TAG,"got terrain color "+terrain.name+"="+Integer.toHexString(color));
 			terrainColorMap.put(terrain.symbol,color);
 		}
 	}
@@ -69,11 +71,11 @@ public class MapDrawer {
 		}
 	}
 
-	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen) {
+	public void drawMap(Canvas canvas, GameBoard map, Matrix tileToScreen) {
 		drawMap(canvas, map, tileToScreen,null);
 	}
 
-	public void drawMap(Canvas canvas, TerrainMap map, Matrix tileToScreen,MapDrawParameters params) {
+	public void drawMap(Canvas canvas, GameBoard map, Matrix tileToScreen,MapDrawParameters params) {
 		int w=canvas.getWidth();
 		int h=canvas.getHeight();
 		//Log.i(TAG, "drawSurface - map=" + map + "  view dims=" + w + "," + h);
@@ -83,6 +85,7 @@ public class MapDrawer {
 
 		tileToScreen.invert(screenToTile);
 		screenToTile.mapRect(mapBoundsRect,screenRect);
+
 		int minX=(int)Math.floor(mapBoundsRect.left);
 		if (minX<0) minX=0;
 		int maxX=(int)Math.ceil(mapBoundsRect.right);
@@ -146,19 +149,19 @@ public class MapDrawer {
 	private void drawMoveOverlay(Canvas canvas, RectF rect, int shadeId) {
 		paint.setStyle(Paint.Style.FILL);
 		if (shadeId== MapDrawParameters.SHADE_MOVE) {
-			paint.setColor(0x88FFFFFF);
+			paint.setColor(moveOverlayColor);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 		if (shadeId== MapDrawParameters.SHADE_INVALID) {
-			paint.setColor(0xE0000000);
+			paint.setColor(invalidOverlayColor);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 		if (shadeId== MapDrawParameters.SHADE_ATTACK) {
-			paint.setColor(0xCCFF0000);
+			paint.setColor(attackOverlayColor);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 		if (shadeId== MapDrawParameters.SHADE_SELECTED_UNIT) {
-			paint.setColor(0xCCFFFFFF);
+			paint.setColor(selectedOverlayColor);
 			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
 		}
 	}
@@ -225,7 +228,7 @@ public class MapDrawer {
 		canvas.drawRect(subrect,paint);
 	}
 
-	public Point getMapPosFromScreen(float screenX, float screenY, Matrix tileToScreen, TerrainMap map) {
+	public Point getMapPosFromScreen(float screenX, float screenY, Matrix tileToScreen, GameBoard map) {
 		tileToScreen.invert(screenToTile);
 		float[] xy={screenX,screenY};
 		screenToTile.mapPoints(xy);

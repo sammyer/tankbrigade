@@ -19,7 +19,7 @@ import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
-import com.frozen.tankbrigade.map.model.TerrainMap;
+import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.UnitMove;
 
 import org.metalev.multitouch.controller.MultiTouchController;
@@ -54,7 +54,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	public static final String TAG="GameView";
 
-	private TerrainMap map;
+	private GameBoard map;
 	private Matrix tileToScreen;
 	private final static int tileSize=50;
 	private RectF tileRect=new RectF();
@@ -66,7 +66,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	private MultiTouchController<Object> multitouch=new MultiTouchController<Object>(this);
 
-	public void setMap(TerrainMap map,GameData config) {
+	public void setMap(GameBoard map,GameData config) {
 		renderer=new MapDrawer(getContext(),config);
 		this.map=map;
 		tileToScreen=new Matrix();
@@ -138,7 +138,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	@Override
 	public void getPositionAndScale(Object obj, PositionAndScale objPosAndScaleOut) {
-		tileRect.set(0,0,1,1);
+		tileRect.set(0, 0, 1, 1);
 		tileToScreen.mapRect(tileRect);
 		objPosAndScaleOut.set(tileRect.left,tileRect.top,true,tileRect.width(),false,0,0,false,0);
 	}
@@ -160,6 +160,20 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		//Log.d(TAG,"selectObject");
 	}
 
+	public void setFocusRect(RectF rect,boolean union) {
+		int w=getWidth();
+		int h=getHeight();
+		if (w==0||h==0) return;
+		RectF screenRect=new RectF(0, 0, w, h);
+		if (union) {
+			Matrix screenToTile=new Matrix();
+			RectF mapBoundsRect=new RectF();
+			tileToScreen.invert(screenToTile);
+			screenToTile.mapRect(mapBoundsRect,screenRect);
+			rect.union(mapBoundsRect);
+		}
+		tileToScreen.setRectToRect(rect,screenRect, Matrix.ScaleToFit.CENTER);
+	}
 
 	// ----------- UI ----------------
 
@@ -196,12 +210,11 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		animateAttack(move,move.attackTarget,move.unit.getPos());
 	}
 
-	private SpriteAnimation explosion;
 	protected void animateAttack(UnitMove move, GameUnit unit, Point target) {
 		UnitAttackAnimation unitAnim=new UnitAttackAnimation(move,unit);
 		unit.setAnimation(unitAnim);
 		addAnimation(unitAnim);
-		if (explosion==null) explosion=new SpriteAnimation(getContext(),
+		SpriteAnimation explosion=new SpriteAnimation(getContext(),
 				SpriteAnimation.EXPLOSION_RES,300,target);
 		explosion.setStartTime(200);
 		addAnimation(explosion);
@@ -212,5 +225,22 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		synchronized (drawParams) {
 			drawParams.addAnimation(animation);
 		}
+	}
+
+	public void focusOnMove(UnitMove move) {
+		RectF moveRect=new RectF(0,0,1,1);
+		moveRect.offsetTo(move.unit.x, move.unit.y);
+		RectF endRect=new RectF(0,0,1,1);
+		Point endpoint=move.getEndPoint();
+		if (endpoint!=null) {
+			endRect.offsetTo(endpoint.x,endpoint.y);
+			moveRect.union(endRect);
+		}
+		endpoint=move.getAttackPoint();
+		if (endpoint!=null) {
+			endRect.offsetTo(endpoint.x,endpoint.y);
+			moveRect.union(endRect);
+			}
+		setFocusRect(moveRect,true);
 	}
 }

@@ -2,6 +2,7 @@ package com.frozen.tankbrigade.map.model;
 
 import android.content.Context;
 
+import com.frozen.easyjson.JsonProperty;
 import com.frozen.tankbrigade.util.FileUtils;
 
 import org.json.JSONArray;
@@ -15,6 +16,8 @@ import java.util.List;
  * Created by sam on 08/02/14.
  */
 public class GameData {
+	@JsonProperty
 	public List<TerrainType> terrainTypes;
-	public List<GameUnitType> gameUnittypes;
+	@JsonProperty
+	public List<GameUnitType> unitTypes;
 }

@@ -36,7 +36,7 @@ public class GameUnitType {
 	@JsonProperty
 	private int[] range;
 	@JsonProperty
-	private String mode;
+	private String moveType;
 	@JsonProperty
 	public boolean canAttackAir=false;
 
@@ -56,19 +56,19 @@ public class GameUnitType {
 	}
 
 	public boolean isTank() {
-		return mode.equals("tracked");
+		return moveType.equals("tracked");
 	}
 
 	public boolean isLand() {
-		return mode.equals("tracked")||mode.equals("foot");
+		return moveType.equals("tracked")|| moveType.equals("foot");
 	}
 
 	public boolean isWater() {
-		return mode.equals("water");
+		return moveType.equals("water");
 	}
 
 	public boolean isAir() {
-		return mode.equals("air");
+		return moveType.equals("air");
 	}
 
 	public boolean isRanged() {

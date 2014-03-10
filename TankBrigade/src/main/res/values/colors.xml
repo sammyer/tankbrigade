@@ -8,5 +8,9 @@
     <color name="terrainColor_bridge">#222233</color>
     <color name="terrainColor_water">#2266FF</color>
     <color name="terrainColor_beach">#EEEEAA</color>
-    
+
+    <color name="overlay_move">#88FFFFFF</color>
+    <color name="overlay_attack">#CCFF0000</color>
+    <color name="overlay_invalid">#A0000000</color>
+    <color name="overlay_selected">#CCFFFFFF</color>
 </resources>

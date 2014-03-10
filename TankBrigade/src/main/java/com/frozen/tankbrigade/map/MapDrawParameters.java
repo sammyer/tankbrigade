@@ -1,10 +1,11 @@
 package com.frozen.tankbrigade.map;
 
 import android.graphics.Point;
-import android.support.v7.appcompat.R;
 
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.model.GameUnit;
+import com.frozen.tankbrigade.map.paths.IPathMap;
+import com.frozen.tankbrigade.map.paths.PathNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -68,16 +69,16 @@ public class MapDrawParameters {
 		return (animations.size()>0);
 	}
 
-	public static void setMapOverlayFromPaths(GameUnit unit, MoveSearchNode[][] paths, short[][] destination) {
+	public static void setMapOverlayFromPaths(GameUnit unit, IPathMap paths, short[][] destination) {
 		//if (allocatedArray==null) allocatedArray=new short[paths.length][paths[0].length];
-		for (int x=0;x<paths.length;x++) {
-			for (int y=0;y<paths[0].length;y++) {
+		for (int x=0;x<paths.width();x++) {
+			for (int y=0;y<paths.height();y++) {
 				short shadeId;
 				if (x==unit.x&&y==unit.y) shadeId=SHADE_SELECTED_UNIT;
-				MoveSearchNode move=paths[x][y];
+				PathNode move=paths.getNode(x,y);
 				if (move==null) shadeId=SHADE_INVALID;
-				else if (move.actionType== MoveSearchNode.MOVE) shadeId=SHADE_MOVE;
-				else if (move.actionType== MoveSearchNode.ATTACK) shadeId=SHADE_ATTACK;
+				else if (move.actionType== PathNode.MOVE) shadeId=SHADE_MOVE;
+				else if (move.actionType== PathNode.ATTACK) shadeId=SHADE_ATTACK;
 				else shadeId=SHADE_INVALID;
 				destination[x][y]=shadeId;
 			}

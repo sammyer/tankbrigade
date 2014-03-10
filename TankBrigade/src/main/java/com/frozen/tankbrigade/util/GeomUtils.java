@@ -49,6 +49,14 @@ public class GeomUtils {
 		return true;
 	}
 
+	public static boolean isInBounds(Object[][] arr, int x, int y) {
+		if (x<0||y<0) return false;
+		if (arr==null||arr.length==0||arr[0].length==0) return false;
+		if (x>=arr.length) return false;
+		if (y>=arr[0].length) return false;
+		return true;
+	}
+
 	public static float interpolate(float a, float b, float proportion) {
 		return a + ((b - a) * proportion);
 	}

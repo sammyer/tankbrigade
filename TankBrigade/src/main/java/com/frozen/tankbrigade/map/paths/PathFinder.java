@@ -1,10 +1,9 @@
-package com.frozen.tankbrigade.map;
+package com.frozen.tankbrigade.map.paths;
 
 import android.util.Log;
 
 import com.frozen.tankbrigade.map.model.GameUnit;
-import com.frozen.tankbrigade.map.model.GameUnitType;
-import com.frozen.tankbrigade.map.model.TerrainMap;
+import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.TerrainType;
 
 import java.util.ArrayList;
@@ -19,27 +18,33 @@ import java.util.List;
 public class PathFinder {
 	private static final String TAG = "PathFinder";
 
-	private List<MoveSearchNode> nodeSearchQueue=new ArrayList<MoveSearchNode>();
-	private MoveSearchNode[][] nodeMap;
+	private List<PathNode> nodeSearchQueue=new ArrayList<PathNode>();
+	private IPathMap nodeMap;
 
-	private Comparator<MoveSearchNode> costComparator=new Comparator<MoveSearchNode>() {
+	private Comparator<PathNode> costComparator=new Comparator<PathNode>() {
 		@Override
-		public int compare(MoveSearchNode node, MoveSearchNode node2) {
+		public int compare(PathNode node, PathNode node2) {
 			return node.totalCost-node2.totalCost;
 		}
 	};
 
-	public MoveSearchNode[][] findLegalMoves(TerrainMap map, GameUnit unit) {
-		if (nodeMap==null||nodeMap.length!=map.width()||nodeMap[0].length!=map.height()) {
-			nodeMap=new MoveSearchNode[map.width()][map.height()];
-		} else {
-			for (int i=0;i<nodeMap.length;i++) Arrays.fill(nodeMap[i],null);
-		}
+	public PathFinder() {
+		nodeMap=new PathMap();
+	}
+
+	public PathFinder(IPathMap nodeMap) {
+		this.nodeMap=nodeMap;
+	}
+
+
+	public IPathMap findLegalMoves(GameBoard map, GameUnit unit) {
+		nodeMap.init(map.width(),map.height());
+
 		int x=unit.x;
 		int y=unit.y;
 		nodeSearchQueue.clear();
-		MoveSearchNode node=new MoveSearchNode(x,y,null,0);
-		nodeMap[x][y]=node;
+		PathNode node=new PathNode(x,y,null,0);
+		nodeMap.setNode(x,y,node);
 		nodeSearchQueue.add(node);
 
 		while (nodeSearchQueue.size()>0) {
@@ -52,22 +57,21 @@ public class PathFinder {
 			checkNode(map,unit,node.x,node.y-1,node);
 		}
 
-		searchForAttacks(map,nodeMap,unit);
-
+		searchForValidAttacks(map, nodeMap, unit);
 		return nodeMap;
 	}
 
-	private void checkNode(TerrainMap map, GameUnit unit, int x, int y, MoveSearchNode prev) {
+	private void checkNode(GameBoard map, GameUnit unit, int x, int y, PathNode prev) {
 		if (!map.isInBounds(x,y)) return;
 		TerrainType terrain=map.getTerrain(x,y);
 
 		GameUnit mapUnit=map.getUnitAt(x,y);
 		int actionType;
-		if (mapUnit==null) actionType= MoveSearchNode.MOVE;  //no unit here
-		else if (mapUnit.ownerId==unit.ownerId) actionType= MoveSearchNode.PASSTHROUGH;  //friendly unit
-		else actionType= MoveSearchNode.ATTACK;  //enemy unit
+		if (mapUnit==null) actionType= PathNode.MOVE;  //no unit here
+		else if (mapUnit.ownerId==unit.ownerId) actionType= PathNode.PASSTHROUGH;  //friendly unit
+		else actionType= PathNode.ATTACK;  //enemy unit
 
-		if (actionType== MoveSearchNode.ATTACK) {
+		if (actionType== PathNode.ATTACK) {
 			Log.i(TAG,"checkNode "+x+","+y+" enemy here");
 			return;
 		}
@@ -83,13 +87,13 @@ public class PathFinder {
 		int totalCost=prev.totalCost+cost;
 		if (totalCost>unit.movesLeft) return;
 
-		MoveSearchNode node=nodeMap[x][y];
+		PathNode node=nodeMap.getNode(x,y);
 		if (node!=null&&node.totalCost<=totalCost) return;
 
-		node=new MoveSearchNode(x,y,prev,cost);
+		node=new PathNode(x,y,prev,cost);
 		node.actionType=actionType;
 		Log.d(TAG,"saving valid move "+node);
-		nodeMap[x][y]=node;
+		nodeMap.setNode(x,y,node);
 
 		//dont bother adding to queue if cost==movement or if this is an enemy square
 		if (totalCost<unit.movesLeft) {
@@ -111,20 +115,21 @@ public class PathFinder {
 		return true;
 	}
 
-	private void searchForAttacks(TerrainMap map, MoveSearchNode[][] nodeMap, GameUnit unit) {
+	private void searchForValidAttacks(GameBoard map, IPathMap nodeMap, GameUnit unit) {
 		int range;
-		MoveSearchNode node;
+		PathNode node;
 		if (unit.type.isRanged()) {
 			for (GameUnit mapUnit:map.getUnits()) {
 				if (mapUnit.ownerId==unit.ownerId) continue;
-				//manhattan distance
 				range=Math.abs(unit.x-mapUnit.x)+Math.abs(unit.y-mapUnit.y);
 				Log.d(TAG,"check ranged unit - "+unit+" -> "+mapUnit+"  range="+range+"  "+
 						unit.type.getMinRange()+"-"+unit.type.getMaxRange());
-				if (range>=unit.type.getMinRange()&&range<=unit.type.getMaxRange()) {
-					node=new MoveSearchNode(mapUnit.x,mapUnit.y,null,0);
-					node.actionType= MoveSearchNode.ATTACK;
-					nodeMap[mapUnit.x][mapUnit.y]=node;
+				if (range>=unit.type.getMinRange()&&range<=unit.type.getMaxRange()) {}
+				//ranged units cannot move and attack
+				if (unit.canAttackFromCurrentPos(mapUnit)) {
+					node=new PathNode(mapUnit.x,mapUnit.y,null,0);
+					node.actionType= PathNode.ATTACK;
+					nodeMap.setNode(mapUnit.x, mapUnit.y, node);
 				}
 			}
 		} else {
@@ -141,28 +146,21 @@ public class PathFinder {
 	}
 
 	private void checkAttackNode(GameUnit unit, GameUnit enemyUnit, int prevX, int prevY) {
-		if (!isInBounds(nodeMap,prevX,prevY)) return;
-		MoveSearchNode prev=nodeMap[prevX][prevY];
-		if (prev==null||prev.actionType!= MoveSearchNode.MOVE) return;
-		if (!unit.type.canAttack(enemyUnit.type)) return;
+		if (!nodeMap.isInBounds(prevX,prevY)) return;
+		PathNode prev=nodeMap.getNode(prevX,prevY);
+		if (prev==null||prev.actionType!= PathNode.MOVE) return;
+		if (!unit.canAttackFrom(enemyUnit, prevX, prevY)) return;
 		int x=enemyUnit.x;
 		int y=enemyUnit.y;
 
-		MoveSearchNode curNode=nodeMap[x][y];
+		PathNode curNode=nodeMap.getNode(x,y);
 
-		MoveSearchNode node=new MoveSearchNode(x,y,prev,0);
-		node.actionType= MoveSearchNode.ATTACK;
+		PathNode node=new PathNode(x,y,prev,0);
+		node.actionType= PathNode.ATTACK;
 
 		if (curNode==null||node.totalCost<curNode.totalCost) {
-			nodeMap[x][y]=node;
+			nodeMap.setNode(x,y,node);
 		}
 	}
 
-	private static boolean isInBounds(Object[][] arr, int x, int y) {
-		if (x<0||y<0) return false;
-		if (arr==null||arr.length==0||arr[0].length==0) return false;
-		if (x>=arr.length) return false;
-		if (y>=arr[0].length) return false;
-		return true;
-	}
 }
