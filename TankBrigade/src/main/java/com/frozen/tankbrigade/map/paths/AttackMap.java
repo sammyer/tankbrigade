@@ -1,6 +1,8 @@
 package com.frozen.tankbrigade.map.paths;
 
+import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.model.GameUnit;
+import com.frozen.tankbrigade.util.SparseMap;
 
 import java.util.BitSet;
 
@@ -20,7 +22,7 @@ public class AttackMap {
 		bitSet=new BitSet(w*h);
 	}
 
-	public AttackMap(GameUnit unit, IPathMap map) {
+	public AttackMap(GameUnit unit, SparseMap<UnitMove> map) {
 		this.unit = unit;
 		w=map.width();
 		h=map.height();
@@ -47,11 +49,11 @@ public class AttackMap {
 	}
 
 
-	public void setAttacks(IPathMap nodeMap) {
+	public void setAttacks(SparseMap<UnitMove> nodeMap) {
 		if (unit.type.isRanged()) setRangedAttacks();
 		else {
-			for (PathNode node:nodeMap.getAllNodes()) {
-				if (node.actionType==PathNode.MOVE||node.actionType==PathNode.PASSTHROUGH) {
+			for (UnitMove node:nodeMap.getAllNodes()) {
+				if (node.getActionType()==UnitMove.MOVE) {
 					int x=node.x;
 					int y=node.y;
 					set(x+1,y);

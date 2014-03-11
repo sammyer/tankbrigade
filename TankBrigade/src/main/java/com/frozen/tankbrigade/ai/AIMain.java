@@ -6,13 +6,10 @@ import android.util.Log;
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameBoard;
-import com.frozen.tankbrigade.map.model.GameUnitMap;
-import com.frozen.tankbrigade.map.model.TerrainMap;
 import com.frozen.tankbrigade.map.model.TerrainType;
 import com.frozen.tankbrigade.map.paths.AttackMap;
-import com.frozen.tankbrigade.map.paths.IPathMap;
 import com.frozen.tankbrigade.map.paths.PathFinder;
-import com.frozen.tankbrigade.map.paths.PathNode;
+import com.frozen.tankbrigade.util.SparseMap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,12 +46,10 @@ public class AIMain {
 	}
 
 	private UnitMove findMoveForUnit(GameUnit unit) {
-		IPathMap pathMap=pathFinder.findLegalMoves(gameBoard,unit);
+		SparseMap<UnitMove> moveMap=pathFinder.findLegalMoves(gameBoard,unit);
 		float highestScore=0;
 		UnitMove bestMove=null;
-		for (PathNode pathNode:pathMap.getAllNodes()) {
-			if (pathNode.actionType==PathNode.PASSTHROUGH) continue;
-			UnitMove move=pathNode.getMove(unit, gameBoard);
+		for (UnitMove move:moveMap.getAllNodes()) {
 			float score=costAnalyzer.getScore(move);
 			if (score>=highestScore) {
 				highestScore=score;
@@ -73,8 +68,8 @@ public class AIMain {
 
 			for (GameUnit unit:map.getUnits()) {
 				if (unit.ownerId==playerId) continue;
-				IPathMap pathMap=pathFinder.findLegalMoves(map,unit);
-				AttackMap attackMap=new AttackMap(unit,pathMap);
+				SparseMap<UnitMove> moveMap=pathFinder.findLegalMoves(map,unit);
+				AttackMap attackMap=new AttackMap(unit,moveMap);
 				attackMaps.add(attackMap);
 			}
 			this.gameBoard =map;
@@ -140,6 +135,6 @@ public class AIMain {
 		GameUnit target;
 		if (move.attackTarget==null) target=null;
 		else target=move.attackTarget.getOriginalUnit();
-		return new UnitMove(unit,move.path,move.movementCost,target);
+		return new UnitMove(unit,move.getPath(),move.movementCost,target);
 	}
 }

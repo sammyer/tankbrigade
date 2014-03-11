@@ -20,13 +20,12 @@ import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
-import com.frozen.tankbrigade.map.paths.IPathMap;
-import com.frozen.tankbrigade.map.paths.PathNode;
 import com.frozen.tankbrigade.map.paths.PathFinder;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.TerrainType;
 import com.frozen.tankbrigade.util.FileUtils;
+import com.frozen.tankbrigade.util.SparseMap;
 
 import org.json.JSONObject;
 
@@ -49,10 +48,10 @@ public class BoardFragment extends Fragment implements
 	private GameData gameConfig;
 	private PathFinder pathFinder=new PathFinder();
 	private GameBoard map;
-	private IPathMap moveMap;
+	private SparseMap<UnitMove> moveMap;
 	private short[][] shadeMap;
 	private GameUnit selectedUnit;
-	private PathNode selectedMove;
+	private UnitMove selectedMove;
 	private UnitMove currentMove;
 	private int curPlayer=Player.USER_ID;
 
@@ -93,7 +92,7 @@ public class BoardFragment extends Fragment implements
 	@Override
 	public void onTileSelected(Point tilePos) {
 		GameUnit unit=map.getUnitAt(tilePos.x,tilePos.y);
-		PathNode move=moveMap==null?null:moveMap.getNode(tilePos.x,tilePos.y);
+		UnitMove move=moveMap==null?null:moveMap.get(tilePos.x,tilePos.y);
 		Log.i(TAG,"onTileSelected "+tilePos+" unit="+unit+" selectedUnit="+selectedUnit);
 		//GameUnit selectedUnit=(mapPaths ==null?null: mapPaths.unit);
 		if (selectedUnit==null) {
@@ -143,18 +142,14 @@ public class BoardFragment extends Fragment implements
 		infoBar.setTerrain(terrain);
 	}
 
-	private void selectMove(PathNode move) {
+	private void selectMove(UnitMove move) {
 		Log.i(TAG, "selectMove");
 		selectedMove=move;
-		UnitMove unitMove=move.getMove(selectedUnit,map);
-		gameBoard.highlightPath(unitMove.path, unitMove.getAttackPoint());
+		gameBoard.highlightPath(move.getPath(), move.getAttackPoint());
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------
 
-	private void executeMove(PathNode move) {
-		executeMove(move.getMove(selectedUnit,map));
-	}
 	public void executeMove(UnitMove unitMove) {
 		Log.i(TAG,"executeMove");
 		currentMove=unitMove;
@@ -162,8 +157,8 @@ public class BoardFragment extends Fragment implements
 		gameBoard.clearPath();
 
 		gameBoard.focusOnMove(unitMove);
-		if (unitMove.path!=null&&unitMove.path.length>0) gameBoard.animateMove(unitMove);
-		else if (unitMove.attackTarget!=null) gameBoard.animateAttack(unitMove);
+		if (unitMove.hasMove()) gameBoard.animateMove(unitMove);
+		else if (unitMove.isAttack()) gameBoard.animateAttack(unitMove);
 		else onMoveExecuted(unitMove);
 
 		endTurnBtn.setEnabled(false);

@@ -4,10 +4,10 @@ import android.graphics.Point;
 
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.model.GameUnit;
-import com.frozen.tankbrigade.map.paths.IPathMap;
-import com.frozen.tankbrigade.map.paths.PathNode;
+import com.frozen.tankbrigade.util.SparseMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -15,10 +15,10 @@ import java.util.List;
 */
 public class MapDrawParameters {
 
-	public static final int SHADE_INVALID=0;
-	public static final int SHADE_MOVE=1;
-	public static final int SHADE_ATTACK=2;
-	public static final int SHADE_SELECTED_UNIT=3;
+	public static final short SHADE_INVALID=0;
+	public static final short SHADE_MOVE=1;
+	public static final short SHADE_ATTACK=2;
+	public static final short SHADE_SELECTED_UNIT=3;
 
 	public short[][] mapOverlay;
 	public Point[] selectedPath;
@@ -69,20 +69,17 @@ public class MapDrawParameters {
 		return (animations.size()>0);
 	}
 
-	public static void setMapOverlayFromPaths(GameUnit unit, IPathMap paths, short[][] destination) {
+	public static void setMapOverlayFromPaths(GameUnit unit, SparseMap<UnitMove> moveMap, short[][] destination) {
 		//if (allocatedArray==null) allocatedArray=new short[paths.length][paths[0].length];
-		for (int x=0;x<paths.width();x++) {
-			for (int y=0;y<paths.height();y++) {
-				short shadeId;
-				if (x==unit.x&&y==unit.y) shadeId=SHADE_SELECTED_UNIT;
-				PathNode move=paths.getNode(x,y);
-				if (move==null) shadeId=SHADE_INVALID;
-				else if (move.actionType== PathNode.MOVE) shadeId=SHADE_MOVE;
-				else if (move.actionType== PathNode.ATTACK) shadeId=SHADE_ATTACK;
-				else shadeId=SHADE_INVALID;
-				destination[x][y]=shadeId;
-			}
+		for (int x=0;x<destination.length;x++) {
+			Arrays.fill(destination[x],SHADE_INVALID);
 		}
+
+		for (UnitMove move:moveMap.getAllNodes()) {
+			if (move.isAttack()) destination[move.x][move.y]=SHADE_ATTACK;
+			else destination[move.x][move.y]=SHADE_MOVE;
+		}
+		destination[unit.x][unit.y]=SHADE_SELECTED_UNIT;
 	}
 
 	public MapDrawParameters clone() {

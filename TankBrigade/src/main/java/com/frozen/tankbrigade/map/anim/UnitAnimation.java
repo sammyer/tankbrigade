@@ -18,7 +18,7 @@ public class UnitAnimation implements PosAnimation,MapAnimation {
 
 	public UnitAnimation(UnitMove move) {
 		this.move=move;
-		this.path=move.path;
+		this.path=move.getPath();
 		animateStartTime=System.currentTimeMillis();
 	}
 
