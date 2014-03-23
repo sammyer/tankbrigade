@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,6 +22,7 @@ import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.UnitMove;
+import com.frozen.tankbrigade.util.SparseMap;
 
 import org.metalev.multitouch.controller.MultiTouchController;
 import org.metalev.multitouch.controller.MultiTouchController.PointInfo;
@@ -55,22 +57,23 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	public static final String TAG="GameView";
 
 	private GameBoard map;
-	private Matrix tileToScreen;
-	private final static int tileSize=50;
-	private RectF tileRect=new RectF();
+	private Matrix transformMtx;
+	private RectF unitRect =new RectF();
 	private MapDrawer renderer;
 	private GameViewListener listener;
 	private MapDrawParameters drawParams =new MapDrawParameters();
+	private static final float MIN_SCALE=0.2f;
+	private static final float MAX_SCALE=1.5f;
 
 	private boolean uiEnabled=true;
 
 	private MultiTouchController<Object> multitouch=new MultiTouchController<Object>(this);
 
 	public void setMap(GameBoard map,GameData config) {
-		renderer=new MapDrawer(getContext(),config);
+		//renderer=new BasicMapDrawer(getContext(),config);
+		renderer=new GraphicMapDrawer(getContext(),config);
 		this.map=map;
-		tileToScreen=new Matrix();
-		tileToScreen.setScale(tileSize,tileSize);
+		transformMtx =new Matrix();
 		invalidate();
 	}
 
@@ -107,7 +110,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		}
 
 		MapDrawParameters drawParameters=this.drawParams.clone(); //to avoid concurrency issues
-		renderer.drawMap(canvas,map,tileToScreen, drawParameters);
+		renderer.drawMap(canvas,map, transformMtx, drawParameters);
 	}
 
 
@@ -117,10 +120,10 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	@Override
 	public boolean onTouch(View view, MotionEvent motionEvent) {
 		if (!uiEnabled) return false;
-		if (tileToScreen==null) return true;
+		if (transformMtx ==null) return true;
 
 		if (motionEvent.getActionMasked()==MotionEvent.ACTION_DOWN&&motionEvent.getActionIndex()==0) {
-			Point tilePos=renderer.getMapPosFromScreen(motionEvent.getX(),motionEvent.getY(),tileToScreen,map);
+			Point tilePos=renderer.getMapPosFromScreen(motionEvent.getX(),motionEvent.getY(), transformMtx,map);
 			if (tilePos!=null&&listener!=null) {
 				listener.onTileSelected(tilePos);
 			}
@@ -138,20 +141,32 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	@Override
 	public void getPositionAndScale(Object obj, PositionAndScale objPosAndScaleOut) {
-		tileRect.set(0, 0, 1, 1);
-		tileToScreen.mapRect(tileRect);
-		objPosAndScaleOut.set(tileRect.left,tileRect.top,true,tileRect.width(),false,0,0,false,0);
+		unitRect.set(0, 0, 1, 1);
+		transformMtx.mapRect(unitRect);
+		objPosAndScaleOut.set(unitRect.left, unitRect.top,true, unitRect.width(),false,0,0,false,0);
 	}
 
+	private Rect mapTranslateBounds;
+	private Matrix rollbackMatrix=new Matrix();
 	@Override
 	public boolean setPositionAndScale(Object obj, PositionAndScale newObjPosAndScale, PointInfo touchPoint) {
-		tileToScreen.reset();
 		float scale=newObjPosAndScale.getScale();
-		float maxScale=getWidth()/4;
-		if (scale<20) scale=20;
-		if (scale>maxScale) scale=maxScale;
-		tileToScreen.setScale(scale,scale);
-		tileToScreen.postTranslate(newObjPosAndScale.getXOff(),newObjPosAndScale.getYOff());
+		//float maxScale=getWidth()/4;
+		if (scale<MIN_SCALE||scale>MAX_SCALE) return false;
+		if (screenRect==null) return false;
+
+		rollbackMatrix.set(transformMtx);
+		transformMtx.reset();
+		transformMtx.setScale(scale, scale);
+		transformMtx.postTranslate(newObjPosAndScale.getXOff(), newObjPosAndScale.getYOff());
+
+		//check if it board is not off-screen
+		if (mapTranslateBounds==null) mapTranslateBounds=new Rect(1,1,map.width()-1,map.height()-1);
+		if (!getAreaShown().intersect(renderer.getScreenBounds(mapTranslateBounds))) {
+			transformMtx.set(rollbackMatrix);
+			return false;
+		}
+
 		return true;
 	}
 
@@ -160,19 +175,31 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		//Log.d(TAG,"selectObject");
 	}
 
-	public void setFocusRect(RectF rect,boolean union) {
-		int w=getWidth();
-		int h=getHeight();
-		if (w==0||h==0) return;
-		RectF screenRect=new RectF(0, 0, w, h);
+
+	private RectF screenRect;
+	@Override
+	protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+		if (w==0||h==0) screenRect=null;
+		else screenRect=new RectF(0,0,w,h);
+		super.onSizeChanged(w, h, oldw, oldh);
+	}
+
+	private Matrix inverseTransform=new Matrix();
+	private RectF areaShown=new RectF();
+	public RectF getAreaShown() {
+		if (screenRect==null) return null;
+		transformMtx.invert(inverseTransform);
+		inverseTransform.mapRect(areaShown,screenRect);
+		return areaShown;
+	}
+
+	public void setFocusRect(Rect rect,boolean union) {
+		if (screenRect==null) return;
+		RectF focusRect=renderer.getScreenBounds(rect);
 		if (union) {
-			Matrix screenToTile=new Matrix();
-			RectF mapBoundsRect=new RectF();
-			tileToScreen.invert(screenToTile);
-			screenToTile.mapRect(mapBoundsRect,screenRect);
-			rect.union(mapBoundsRect);
+			focusRect.union(getAreaShown());
 		}
-		tileToScreen.setRectToRect(rect,screenRect, Matrix.ScaleToFit.CENTER);
+		transformMtx.setRectToRect(focusRect, screenRect, Matrix.ScaleToFit.CENTER);
 	}
 
 	// ----------- UI ----------------
@@ -187,8 +214,12 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		drawParams.selectedAttack=null;
 	}
 
-	public void setOverlay(short[][] overlay) {
-		drawParams.mapOverlay=overlay;
+	public void setOverlay(GameUnit selectedUnit, SparseMap<UnitMove> moveMap) {
+		drawParams.setMoveOverlay(new Point(selectedUnit.x,selectedUnit.y),moveMap);
+	}
+
+	public void removeOverlay() {
+		drawParams.setMoveOverlay(null,null);
 	}
 
 	public void highlightPath(Point[] path,Point attack) {
@@ -228,9 +259,9 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	}
 
 	public void focusOnMove(UnitMove move) {
-		RectF moveRect=new RectF(0,0,1,1);
+		Rect moveRect=new Rect(0,0,1,1);
 		moveRect.offsetTo(move.unit.x, move.unit.y);
-		RectF endRect=new RectF(0,0,1,1);
+		Rect endRect=new Rect(0,0,1,1);
 		Point endpoint=move.getEndPoint();
 		if (endpoint!=null) {
 			endRect.offsetTo(endpoint.x,endpoint.y);

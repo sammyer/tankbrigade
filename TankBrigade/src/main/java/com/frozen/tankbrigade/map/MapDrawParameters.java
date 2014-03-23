@@ -20,13 +20,14 @@ public class MapDrawParameters {
 	public static final short SHADE_ATTACK=2;
 	public static final short SHADE_SELECTED_UNIT=3;
 
-	public short[][] mapOverlay;
+	private SparseMap<UnitMove> moveMap;
+	public Point selectedUnit;
 	public Point[] selectedPath;
 	public Point selectedAttack;
 	private List<MapAnimation> animations=new ArrayList<MapAnimation>();
 
 	public boolean showMoves() {
-		return mapOverlay!=null;
+		return moveMap!=null;
 	}
 
 	public boolean showPath() {
@@ -50,8 +51,9 @@ public class MapDrawParameters {
 		setSelectedPath(null);
 	}
 
-	public void setMapOverlay(short[][] mapOverlay) {
-		this.mapOverlay=mapOverlay;
+	public void setMoveOverlay(Point selectedUnit, SparseMap<UnitMove> moveMap) {
+		this.selectedUnit=selectedUnit;
+		this.moveMap=moveMap;
 		clearSelectedPath();
 	}
 
@@ -69,24 +71,20 @@ public class MapDrawParameters {
 		return (animations.size()>0);
 	}
 
-	public static void setMapOverlayFromPaths(GameUnit unit, SparseMap<UnitMove> moveMap, short[][] destination) {
-		//if (allocatedArray==null) allocatedArray=new short[paths.length][paths[0].length];
-		for (int x=0;x<destination.length;x++) {
-			Arrays.fill(destination[x],SHADE_INVALID);
-		}
-
-		for (UnitMove move:moveMap.getAllNodes()) {
-			if (move.isAttack()) destination[move.x][move.y]=SHADE_ATTACK;
-			else destination[move.x][move.y]=SHADE_MOVE;
-		}
-		destination[unit.x][unit.y]=SHADE_SELECTED_UNIT;
+	public int getOverlay(int x, int y) {
+		if (moveMap==null) return -1;
+		UnitMove move=moveMap.get(x,y);
+		if (move==null) return SHADE_INVALID;
+		else if (move.isAttack()) return SHADE_ATTACK;
+		else return SHADE_MOVE;
 	}
 
 	public MapDrawParameters clone() {
 		MapDrawParameters dup=new MapDrawParameters();
-		dup.mapOverlay=mapOverlay;
+		dup.moveMap=moveMap;
 		dup.selectedPath=selectedPath;
 		dup.selectedAttack=selectedAttack;
+		dup.selectedUnit=selectedUnit;
 		dup.animations=animations;
 		return dup;
 	}

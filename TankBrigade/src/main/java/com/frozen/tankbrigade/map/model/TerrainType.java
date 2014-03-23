@@ -14,7 +14,7 @@ public class TerrainType {
     public static char FOREST='f';
     public static char MOUNTAIN='m';
     public static char ROAD='r';
-    public static char BRIDGE='b';
+    public static char BRIDGE='g';
     public static char WATER='w';
     public static char BEACH='b';
 
@@ -36,5 +36,14 @@ public class TerrainType {
 
 	public boolean isLand() {
 		return symbol!=WATER;
+	}
+
+	public boolean isRoad() {
+		return symbol==ROAD||symbol==BRIDGE;
+	}
+
+	public int getLevel() {
+		if (symbol==BEACH||symbol==WATER||symbol==BRIDGE) return -1;
+		else return 0;
 	}
 }

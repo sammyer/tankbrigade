@@ -1,8 +1,10 @@
 package com.frozen.tankbrigade.util;
 
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 
 /**
@@ -70,5 +72,12 @@ public class GeomUtils {
 			hsvb[i] = interpolate(hsva[i], hsvb[i], proportion);
 		}
 		return Color.HSVToColor(hsvb);
+	}
+
+	private static RectF r=new RectF(0,0,1,1);
+	public static String matrixToString(Matrix m) {
+		r.set(0,0,1,1);
+		m.mapRect(r);
+		return "[Matrix trans="+r.left+","+r.top+" scale="+r.width()+","+r.height()+"]";
 	}
 }

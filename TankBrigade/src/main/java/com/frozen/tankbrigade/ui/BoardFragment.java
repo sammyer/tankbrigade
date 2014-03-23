@@ -118,9 +118,8 @@ public class BoardFragment extends Fragment implements
 			selectedUnit=unit;
 			selectedMove=null;
 			moveMap=pathFinder.findLegalMoves(map,unit);
-			MapDrawParameters.setMapOverlayFromPaths(unit,moveMap,shadeMap);
 			gameBoard.clearPath();
-			gameBoard.setOverlay(shadeMap);
+			gameBoard.setOverlay(unit,moveMap);
 		}
 	}
 	private void deselectUnit() {
@@ -128,7 +127,7 @@ public class BoardFragment extends Fragment implements
 		selectedUnit=null;
 		selectedMove=null;
 		moveMap=null;
-		gameBoard.setOverlay(null);
+		gameBoard.removeOverlay();
 		gameBoard.clearPath();
 	}
 
@@ -153,11 +152,18 @@ public class BoardFragment extends Fragment implements
 	public void executeMove(UnitMove unitMove) {
 		Log.i(TAG,"executeMove");
 		currentMove=unitMove;
-		gameBoard.setOverlay(null);
+		gameBoard.removeOverlay();
 		gameBoard.clearPath();
 
 		gameBoard.focusOnMove(unitMove);
-		if (unitMove.hasMove()) gameBoard.animateMove(unitMove);
+		if (unitMove.hasMove()) {
+			GameUnit unit=unitMove.unit;
+			Point endPoint=unitMove.getEndPoint();
+			unit.x=endPoint.x;
+			unit.y=endPoint.y;
+			unit.movesLeft-=unitMove.movementCost;
+			gameBoard.animateMove(unitMove);
+		}
 		else if (unitMove.isAttack()) gameBoard.animateAttack(unitMove);
 		else onMoveExecuted(unitMove);
 
@@ -175,11 +181,6 @@ public class BoardFragment extends Fragment implements
 	}
 
 	private void onMoveComplete(UnitMove move) {
-		Point endPoint=move.getEndPoint();
-		GameUnit unit=move.unit;
-		unit.x=endPoint.x;
-		unit.y=endPoint.y;
-		unit.movesLeft-=move.movementCost;
 		infoBar.setUnit(selectedUnit);
 		selectedMove=null;
 		selectedUnit=null;
@@ -224,7 +225,7 @@ public class BoardFragment extends Fragment implements
 		selectedUnit=null;
 		selectedMove=null;
 		moveMap=null;
-		gameBoard.setOverlay(null);
+		gameBoard.removeOverlay();
 		gameBoard.clearPath();
 		endTurnBtn.setEnabled(false);
 

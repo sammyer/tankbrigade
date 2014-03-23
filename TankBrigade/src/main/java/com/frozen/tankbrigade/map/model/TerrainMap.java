@@ -35,6 +35,20 @@ public class TerrainMap {
 		return map[x][y];
 	}
 
+	//counts bridge as low level
+	public int getTerrainLevel(int x, int y) {
+		TerrainType terrain=getTerrain(x,y);
+		if (terrain==null) return -1;
+		else return terrain.getLevel();
+	}
+	//counts bridge as higher level
+	public int getTerrainLevel2(int x, int y) {
+		TerrainType terrain=getTerrain(x,y);
+		if (terrain==null) return -1;
+		else if (terrain.symbol==TerrainType.BRIDGE) return 0;
+		else return terrain.getLevel();
+	}
+
 	public void setTerrain(int x, int y, TerrainType terrain) {
 		map[x][y]=terrain;
 	}
