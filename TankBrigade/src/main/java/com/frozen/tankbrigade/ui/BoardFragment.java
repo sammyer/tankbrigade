@@ -13,7 +13,6 @@ import android.widget.Button;
 import com.frozen.easyjson.JSONParser;
 import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.ai.AIMain;
-import com.frozen.tankbrigade.map.MapDrawParameters;
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
@@ -41,6 +40,7 @@ public class BoardFragment extends Fragment implements
 	private GameView gameBoard;
 	private InfoBar infoBar;
 	private Button endTurnBtn;
+	private Button testBtn;
 
 	private AIMain ai=new AIMain();
 	private AITask aiTask;
@@ -66,6 +66,7 @@ public class BoardFragment extends Fragment implements
 		gameBoard =(GameView)rootView.findViewById(R.id.gameview);
 		infoBar=(InfoBar)rootView.findViewById(R.id.infobar);
 		endTurnBtn=(Button)rootView.findViewById(R.id.doneBtn);
+		testBtn=(Button)rootView.findViewById(R.id.testBtn);
 
 		JSONObject configJson= FileUtils.readJSONFile(getActivity(), "gameconfig.json");
 		Log.d(TAG,"gameconfig="+configJson.toString());
@@ -85,8 +86,18 @@ public class BoardFragment extends Fragment implements
 				onEndTurn();
 			}
 		});
+		testBtn.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				onToggleTest();
+			}
+		};
 
 		return rootView;
+	}
+
+	private void onToggleTest() {
+		gameBoard.setTestMode(1-gameBoard.getTestMode());
 	}
 
 	@Override

@@ -1,13 +1,12 @@
-package com.frozen.tankbrigade.map;
+package com.frozen.tankbrigade.ui;
 
 import android.graphics.Point;
 
+import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
-import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.util.SparseMap;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,6 +24,7 @@ public class MapDrawParameters {
 	public Point[] selectedPath;
 	public Point selectedAttack;
 	private List<MapAnimation> animations=new ArrayList<MapAnimation>();
+	public int testMode=0;
 
 	public boolean showMoves() {
 		return moveMap!=null;
@@ -86,6 +86,7 @@ public class MapDrawParameters {
 		dup.selectedAttack=selectedAttack;
 		dup.selectedUnit=selectedUnit;
 		dup.animations=animations;
+		dup.testMode=testMode;
 		return dup;
 	}
 }

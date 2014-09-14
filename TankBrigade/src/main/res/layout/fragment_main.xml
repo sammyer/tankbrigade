@@ -33,6 +33,14 @@
         android:text="End Turn"
         android:textColor="#FFFFFF"
         />
+    <Button
+        android:id="@+id/testBtn"
+        android:layout_height="60dp"
+        android:layout_width="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_toRightOf="@id/doneBtn"
+        android:text="Test"
+        />
 
 
     <com.frozen.tankbrigade.ui.GameView

@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
-import com.frozen.tankbrigade.map.MapDrawParameters;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
@@ -220,6 +219,14 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	public void removeOverlay() {
 		drawParams.setMoveOverlay(null,null);
+	}
+
+	public void setTestMode(int testMode) {
+		drawParams.testMode=testMode;
+	}
+
+	public int getTestMode() {
+		return drawParams.testMode;
 	}
 
 	public void highlightPath(Point[] path,Point attack) {

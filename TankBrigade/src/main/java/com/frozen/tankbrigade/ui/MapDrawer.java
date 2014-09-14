@@ -6,7 +6,6 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 
-import com.frozen.tankbrigade.map.MapDrawParameters;
 import com.frozen.tankbrigade.map.model.GameBoard;
 
 /**

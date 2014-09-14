@@ -17,10 +17,8 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.Log;
 import android.util.SparseArray;
-import android.util.SparseIntArray;
 
 import com.frozen.tankbrigade.R;
-import com.frozen.tankbrigade.map.MapDrawParameters;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.model.GameBoard;
@@ -30,6 +28,7 @@ import com.frozen.tankbrigade.map.model.GameUnitType;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.map.model.TerrainMap;
 import com.frozen.tankbrigade.map.model.TerrainType;
+import com.frozen.tankbrigade.util.ColorGradient;
 import com.frozen.tankbrigade.util.GeomUtils;
 import com.frozen.tankbrigade.util.TileRect;
 
@@ -97,15 +96,13 @@ public class GraphicMapDrawer implements MapDrawer {
 		tileToScreen.preScale(tileW,tileH);
 		tileToScreen.invert(screenToTile);
 		screenToTile.mapRect(mapBoundsRect,screenRect);
+		drawRect.setMatrix(tileToScreen);
 
-		int minX=(int)Math.floor(mapBoundsRect.left);
-		if (minX<0) minX=0;
-		int maxX=(int)Math.ceil(mapBoundsRect.right);
-		if (maxX>map.width()) maxX=map.width();
-		int minY=(int)Math.floor(mapBoundsRect.top);
-		if (minY<0) minY=0;
-		int maxY=(int)Math.ceil(mapBoundsRect.bottom);
-		if (maxY>map.width()) maxY=map.height();
+		Rect mapBounds=new Rect();
+		mapBounds.left=Math.max((int)Math.floor(mapBoundsRect.left),0);
+		mapBounds.right=Math.min((int) Math.ceil(mapBoundsRect.right), map.width());
+		mapBounds.top=Math.max((int)Math.floor(mapBoundsRect.top),0);
+		mapBounds.bottom=Math.min((int) Math.ceil(mapBoundsRect.bottom), map.height());
 		//Log.d(TAG,"screenRect="+screenRect);
 		//Log.d(TAG,"drawRect="+drawRect);
 		//Log.d(TAG,"range = "+minX+","+minY+"-"+maxX+","+maxY);
@@ -113,8 +110,17 @@ public class GraphicMapDrawer implements MapDrawer {
 		//reset canvas
 		canvas.drawColor(Color.BLACK);
 
+		if (params.testMode>0) drawTestMap(canvas,map,params,mapBounds);
+		else drawMapAux(canvas, map, params, mapBounds);
+	}
+
+	private void drawMapAux(Canvas canvas, GameBoard map, MapDrawParameters params, Rect mapBounds) {
+		int minY=mapBounds.top;
+		int maxY=mapBounds.bottom;
+		int minX=mapBounds.left;
+		int maxX=mapBounds.right;
+
 		paint.setStyle(Paint.Style.FILL);
-		drawRect.setMatrix(tileToScreen);
 		for (int tileY=minY;tileY<maxY;tileY++) {
 			for (int tileX=minX;tileX<maxX;tileX++) {
 				drawRect.setTilePos(tileX,tileY);
@@ -322,7 +328,13 @@ public class GraphicMapDrawer implements MapDrawer {
 		Bitmap bitmap=animation.getBitmap();
 		if (bitmap==null) return;
 		drawRect.setTilePos(animation.position.x,animation.position.y);
-		canvas.drawBitmap(bitmap,drawRect.left,drawRect.top,null);
+		int w=bitmap.getWidth();
+		int h=bitmap.getHeight();
+		srcRect.set(0,0,w,h);
+		destRect.set(drawRect);
+		GeomUtils.setRectAspect(destRect,w,h);
+
+		canvas.drawBitmap(bitmap,srcRect,destRect,null);
 	}
 
 	private void drawUnit(Canvas canvas, GameUnit unit, RectF rect) {
@@ -429,4 +441,23 @@ public class GraphicMapDrawer implements MapDrawer {
 		return bounds;
 	}
 
+
+
+
+
+
+	private ColorGradient gradient;
+	private void drawTestMap(Canvas canvas, GameBoard map, MapDrawParameters params, Rect mapBounds) {
+		if (gradient==null) {
+			gradient=new ColorGradient(0xFF0000,0x00CC00);
+		}
+		paint.setStyle(Paint.Style.FILL);
+		for (int tileY=mapBounds.top;tileY<mapBounds.bottom;tileY++) {
+			for (int tileX=mapBounds.left;tileX<mapBounds.right;tileX++) {
+				drawRect.setTilePos(tileX, tileY);
+				paint.setColor(gradient.getColor(0.5f));
+				canvas.drawRect(drawRect,paint);
+			}
+		}
+	}
 }

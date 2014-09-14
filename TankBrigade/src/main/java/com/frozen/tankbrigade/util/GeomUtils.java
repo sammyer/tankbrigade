@@ -80,4 +80,21 @@ public class GeomUtils {
 		m.mapRect(r);
 		return "[Matrix trans="+r.left+","+r.top+" scale="+r.width()+","+r.height()+"]";
 	}
+
+	public static void setRectAspect(RectF rect, float w, float h) {
+		float targetRatio=w/h;
+		float ratio=rect.width()/rect.height();
+		if (ratio==targetRatio) return;
+		else if (ratio>targetRatio) {
+			float w2=rect.height()*targetRatio;
+			float centerX=rect.centerX();
+			rect.left=centerX-w2/2;
+			rect.right=centerX+w2/2;
+		} else {
+			float h2=rect.width()/targetRatio;
+			float centerY=rect.centerY();
+			rect.top=centerY-h2/2;
+			rect.bottom=centerY+h2/2;
+		}
+	}
 }

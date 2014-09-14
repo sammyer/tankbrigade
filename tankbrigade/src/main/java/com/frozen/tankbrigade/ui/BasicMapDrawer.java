@@ -13,7 +13,6 @@ import android.graphics.RectF;
 import android.util.Log;
 import android.util.SparseIntArray;
 
-import com.frozen.tankbrigade.map.MapDrawParameters;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.model.GameData;
