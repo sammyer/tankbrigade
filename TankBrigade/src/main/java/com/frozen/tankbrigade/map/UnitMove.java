@@ -9,6 +9,7 @@ import com.frozen.tankbrigade.map.model.GameUnit;
  * Created by sam on 02/02/14.
  */
 public class UnitMove {
+	public static final int NONE=0; //no action
 	public static final int MOVE=1; //can move here
 	public static final int ATTACK=2; //attack move
 
@@ -69,8 +70,8 @@ public class UnitMove {
 
 	public int getActionType() {
 		if (attackTarget!=null) return ATTACK;
-		else if (path!=null) return MOVE;
-		else return 0;
+		else if (x==unit.x&&y==unit.y) return NONE;
+		else return MOVE;
 	}
 
 	public boolean isAttack() {

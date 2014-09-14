@@ -24,7 +24,8 @@ public class PathFinder {
 		SparseMap<AStarNode> nodeMap=aStar.findMoves(boardAdapter,unit.x,unit.y);
 		SparseMap<UnitMove> moveMap=new SparseMap<UnitMove>(board.width(),board.height());
 		for (AStarNode node:nodeMap.getAllNodes()) {
-			if (board.getUnitAt(node.x,node.y)!=null) continue; //cant move into occupied spot
+			GameUnit occupyingUnit=board.getUnitAt(node.x,node.y);
+			if (occupyingUnit!=null&&occupyingUnit!=unit) continue; //cant move into occupied spot
 			UnitMove move=new UnitMove(unit,node,null);
 			moveMap.set(node.x,node.y,move);
 		}
@@ -40,8 +41,7 @@ public class PathFinder {
 			for (GameUnit mapUnit:board.getUnits()) {
 				if (mapUnit.ownerId==unit.ownerId) continue;
 				range=Math.abs(unit.x-mapUnit.x)+Math.abs(unit.y-mapUnit.y);
-				Log.d(TAG,"check ranged unit - "+unit+" -> "+mapUnit+"  range="+range+"  "+
-						unit.type.getMinRange()+"-"+unit.type.getMaxRange());
+				//Log.d(TAG,"check ranged unit - "+unit+" -> "+mapUnit+"  range="+range+"  "+unit.type.getMinRange()+"-"+unit.type.getMaxRange());
 				if (range>=unit.type.getMinRange()&&range<=unit.type.getMaxRange()) {}
 				//ranged units cannot move and attack
 				if (unit.canAttackFromCurrentPos(mapUnit)) {

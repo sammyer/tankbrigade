@@ -1,6 +1,7 @@
 package com.frozen.tankbrigade.ai;
 
 import android.graphics.Point;
+import android.util.Log;
 
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.model.GameBoard;
@@ -46,27 +47,33 @@ class CostAnalyzer {
 	}
 
 	public float getScore(UnitMove move) {
-		Point endPoint=move.getEndPoint();
-		if (endPoint==null) endPoint=new Point(move.unit.x,move.unit.y);
-		float damageDone=0;
-		if (move.attackTarget!=null) {
-			if (move.unit.type.canAttack(move.attackTarget.type)) {
-				TerrainType terrain= gameBoard.getTerrain(move.unit.x,move.unit.y);
-				damageDone=move.unit.getDamageAgainst(move.attackTarget,terrain);
-			}
-		}
-		float damageTaken=getTotalDamage(move.unit,endPoint.x,endPoint.y);
-		return 2.5f*damageDone-damageTaken;
+		return 2.5f*getDamageDone(move)-getDamageTaken(move);
 	}
 
-	public float getTotalDamage(GameUnit unit, int x, int y) {
+	float getDamageDone(UnitMove move) {
+		if (move.attackTarget!=null&&move.unit.type.canAttack(move.attackTarget.type)) {
+			TerrainType terrain= gameBoard.getTerrain(move.unit.x,move.unit.y);
+			return move.unit.getDamageAgainst(move.attackTarget,terrain);
+		} else return 0;
+	}
+
+	float getDamageTaken(UnitMove move) {
+		Point endPoint=move.getEndPoint();
+		if (endPoint==null) endPoint=new Point(move.unit.x,move.unit.y);
+		return getDamageTaken(move.unit, endPoint.x, endPoint.y);
+	}
+
+	private float getDamageTaken(GameUnit unit, int x, int y) {
 		float damage=0;
 		TerrainType terrain= gameBoard.getTerrain(x,y);
 		for (AttackMap attackMap:attackMaps) {
+			//Log.d("CostAnalyzer","check attack map @"+x+","+y+" result="+attackMap.get(x,y)+","+attackMap.getUnit().type.canAttack(unit.type)+"  for "+attackMap.getUnit());
 			if (attackMap.get(x,y)&&attackMap.getUnit().type.canAttack(unit.type)) {
+				//Log.d("CostAnalyzer","adding damage against - "+attackMap.getUnit().getDamageAgainst(unit,terrain)+"  --  "+attackMap.getUnit()+" -> "+unit);
 				damage+=attackMap.getUnit().getDamageAgainst(unit,terrain);
 			}
 		}
+		if (damage>unit.health) damage=unit.health;
 		return damage;
 	}
 }

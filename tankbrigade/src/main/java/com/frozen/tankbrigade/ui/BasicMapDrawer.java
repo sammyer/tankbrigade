@@ -156,7 +156,7 @@ public class BasicMapDrawer implements MapDrawer {
 		paint.setColor(0xFF2266FF);
 		paint.setStrokeWidth(drawRect.width()/3);
 
-		Log.d(TAG,"drawPath "+pts);
+		//Log.d(TAG,"drawPath "+pts);
 		if (pts.length<2) return;
 		drawRect.setTilePos(pts[0].x,pts[0].y);
 		float sx=drawRect.centerX();

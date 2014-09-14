@@ -37,7 +37,7 @@ public class BoardFragment extends Fragment implements
 		GameView.GameViewListener {
 	private static final String TAG="BoardFragment";
 
-	private GameView gameBoard;
+	private GameView gameBoardView;
 	private InfoBar infoBar;
 	private Button endTurnBtn;
 	private Button testBtn;
@@ -47,7 +47,7 @@ public class BoardFragment extends Fragment implements
 	private List<UnitMove> moveAnimationQueue;
 	private GameData gameConfig;
 	private PathFinder pathFinder=new PathFinder();
-	private GameBoard map;
+	private GameBoard boardModel;
 	private SparseMap<UnitMove> moveMap;
 	private short[][] shadeMap;
 	private GameUnit selectedUnit;
@@ -63,7 +63,7 @@ public class BoardFragment extends Fragment implements
 			Bundle savedInstanceState) {
 
 		View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-		gameBoard =(GameView)rootView.findViewById(R.id.gameview);
+		gameBoardView =(GameView)rootView.findViewById(R.id.gameview);
 		infoBar=(InfoBar)rootView.findViewById(R.id.infobar);
 		endTurnBtn=(Button)rootView.findViewById(R.id.doneBtn);
 		testBtn=(Button)rootView.findViewById(R.id.testBtn);
@@ -73,12 +73,12 @@ public class BoardFragment extends Fragment implements
 		gameConfig= JSONParser.parse(configJson,GameData.class);
 
 		String[] fileContents= FileUtils.readFileLines(getActivity(), "map1.txt");
-		map=new GameBoard();
-		map.parseMapFile(fileContents,gameConfig);
-		shadeMap=new short[map.width()][map.height()];
-		Log.d("test", "size " + map.width() + "," + map.height()+"  units="+map.getUnits().size());
-		gameBoard.setMap(map,gameConfig);
-		gameBoard.setListener(this);
+		boardModel =new GameBoard();
+		boardModel.parseMapFile(fileContents, gameConfig);
+		shadeMap=new short[boardModel.width()][boardModel.height()];
+		Log.d("test", "size " + boardModel.width() + "," + boardModel.height()+"  units="+ boardModel.getUnits().size());
+		gameBoardView.setMap(boardModel, gameConfig);
+		gameBoardView.setListener(this);
 
 		endTurnBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -91,33 +91,46 @@ public class BoardFragment extends Fragment implements
 			public void onClick(View view) {
 				onToggleTest();
 			}
-		};
+		});
 
 		return rootView;
 	}
 
 	private void onToggleTest() {
-		gameBoard.setTestMode(1-gameBoard.getTestMode());
+		Log.d(TAG,"onTest - "+selectedUnit+" / "+Player.AI_ID);
+		if (selectedUnit!=null&&selectedUnit.ownerId==Player.AI_ID) {
+			ai.debugUnitMoves(boardModel,selectedUnit);
+		}
+		//gameBoardView.setTestMode(1 - gameBoardView.getTestMode());
 	}
 
 	@Override
 	public void onTileSelected(Point tilePos) {
-		GameUnit unit=map.getUnitAt(tilePos.x,tilePos.y);
+		GameUnit unit= boardModel.getUnitAt(tilePos.x,tilePos.y);
 		UnitMove move=moveMap==null?null:moveMap.get(tilePos.x,tilePos.y);
 		Log.i(TAG,"onTileSelected "+tilePos+" unit="+unit+" selectedUnit="+selectedUnit);
 		//GameUnit selectedUnit=(mapPaths ==null?null: mapPaths.unit);
-		if (selectedUnit==null) {
+		if (selectedUnit==null||selectedUnit.ownerId!=curPlayer) {
+			//nothing,terrain selected or opposite player unit selected
+			deselectUnit();
 			if (unit==null) selectTerrainAtPos(tilePos);
 			else selectUnit(unit);
-		} else if (unit==selectedUnit||move==null) {
+		} else if (selectedUnit==unit) {
+			//clicking on same unit deselects
 			deselectUnit();
 			selectTerrainAtPos(tilePos);
-		}
-		else if (move==selectedMove) {
+		} else if (move==null) {
+			//invalid move selected - deselect
+			deselectUnit();
+			selectTerrainAtPos(tilePos);
+		} else if (move==selectedMove) {
+			//confirm move
 			executeMove(move);
 		} else if (unit!=null&&unit.ownerId==selectedUnit.ownerId) {
+			//while move active, select a friendly unit -> highlight that unit
 			selectUnit(unit);
 		} else {
+			//select another move
 			selectMove(move);
 		}
 	}
@@ -125,25 +138,27 @@ public class BoardFragment extends Fragment implements
 	private void selectUnit(GameUnit unit) {
 		Log.i(TAG,"selectUnit");
 		infoBar.setUnit(unit);
+		selectedUnit=unit;
 		if (unit.ownerId==curPlayer) {
-			selectedUnit=unit;
 			selectedMove=null;
-			moveMap=pathFinder.findLegalMoves(map,unit);
-			gameBoard.clearPath();
-			gameBoard.setOverlay(unit,moveMap);
+			moveMap=pathFinder.findLegalMoves(boardModel,unit);
+			gameBoardView.clearPath();
+			gameBoardView.setOverlay(unit, moveMap);
 		}
 	}
 	private void deselectUnit() {
 		Log.i(TAG,"deselectUnit");
+		if (selectedUnit!=null&&selectedUnit.ownerId==curPlayer) {
+			selectedMove=null;
+			moveMap=null;
+			gameBoardView.removeOverlay();
+			gameBoardView.clearPath();
+		}
 		selectedUnit=null;
-		selectedMove=null;
-		moveMap=null;
-		gameBoard.removeOverlay();
-		gameBoard.clearPath();
 	}
 
 	private void selectTerrainAtPos(Point pos) {
-		selectTerrain(map.getTerrain(pos.x,pos.y));
+		selectTerrain(boardModel.getTerrain(pos.x, pos.y));
 	}
 
 	private void selectTerrain(TerrainType terrain) {
@@ -155,7 +170,7 @@ public class BoardFragment extends Fragment implements
 	private void selectMove(UnitMove move) {
 		Log.i(TAG, "selectMove");
 		selectedMove=move;
-		gameBoard.highlightPath(move.getPath(), move.getAttackPoint());
+		gameBoardView.highlightPath(move.getPath(), move.getAttackPoint());
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------
@@ -163,19 +178,19 @@ public class BoardFragment extends Fragment implements
 	public void executeMove(UnitMove unitMove) {
 		Log.i(TAG,"executeMove");
 		currentMove=unitMove;
-		gameBoard.removeOverlay();
-		gameBoard.clearPath();
+		gameBoardView.removeOverlay();
+		gameBoardView.clearPath();
 
-		gameBoard.focusOnMove(unitMove);
+		gameBoardView.focusOnMove(unitMove);
 		if (unitMove.hasMove()) {
 			GameUnit unit=unitMove.unit;
 			Point endPoint=unitMove.getEndPoint();
 			unit.x=endPoint.x;
 			unit.y=endPoint.y;
 			unit.movesLeft-=unitMove.movementCost;
-			gameBoard.animateMove(unitMove);
+			gameBoardView.animateMove(unitMove);
 		}
-		else if (unitMove.isAttack()) gameBoard.animateAttack(unitMove);
+		else if (unitMove.isAttack()) gameBoardView.animateAttack(unitMove);
 		else onMoveExecuted(unitMove);
 
 		endTurnBtn.setEnabled(false);
@@ -196,7 +211,7 @@ public class BoardFragment extends Fragment implements
 		selectedMove=null;
 		selectedUnit=null;
 
-		if (move.attackTarget!=null) gameBoard.animateAttack(move);
+		if (move.attackTarget!=null) gameBoardView.animateAttack(move);
 		else onMoveExecuted(move);
 	}
 
@@ -209,14 +224,14 @@ public class BoardFragment extends Fragment implements
 			attacker.setAttackUsed();
 			attacker.movesLeft=0;
 		}
-		int damage=attacker.getDamageAgainst(defender,map.getTerrain(defender.x,defender.y));
+		int damage=attacker.getDamageAgainst(defender, boardModel.getTerrain(defender.x, defender.y));
 		if (damage>=defender.health) {
-			map.getUnits().remove(defender);
+			boardModel.getUnits().remove(defender);
 		} else {
 			defender.health-=damage;
 			if (!isCounterAttack&&defender.canAttackFromCurrentPos(attacker)) {
 				counterAttacking=true;
-				gameBoard.animateCounterattack(move);
+				gameBoardView.animateCounterattack(move);
 			}
 		}
 		if (!counterAttacking) onMoveExecuted(move);
@@ -236,11 +251,11 @@ public class BoardFragment extends Fragment implements
 		selectedUnit=null;
 		selectedMove=null;
 		moveMap=null;
-		gameBoard.removeOverlay();
-		gameBoard.clearPath();
+		gameBoardView.removeOverlay();
+		gameBoardView.clearPath();
 		endTurnBtn.setEnabled(false);
 
-		for (GameUnit unit:map.getUnits()) {
+		for (GameUnit unit: boardModel.getUnits()) {
 			unit.startNewTurn();
 		}
 
@@ -260,7 +275,7 @@ public class BoardFragment extends Fragment implements
 
 		@Override
 		protected List<UnitMove> doInBackground(Void... voids) {
-			return ai.findMoves(map,Player.AI_ID);
+			return ai.findMoves(boardModel,Player.AI_ID);
 		}
 
 		@Override

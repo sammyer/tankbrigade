@@ -358,7 +358,7 @@ public class GraphicMapDrawer implements MapDrawer {
 	private void drawUnitBitmap(Canvas canvas, Bitmap bitmap, RectF rect, boolean flipped, ColorFilter filter) {
 		int w=bitmap.getWidth();
 		int h=bitmap.getHeight();
-		Log.d(TAG,"drawUnitBitmap "+w+","+h+"  rect="+rect);
+		//Log.d(TAG,"drawUnitBitmap "+w+","+h+"  rect="+rect);
 		unitDrawMatrix.reset();
 		unitDrawMatrix.postTranslate(0,-w*0.45f);
 		if (flipped) unitDrawMatrix.postScale(-1,1,w/2,0);

@@ -25,22 +25,28 @@
             />
     </com.frozen.tankbrigade.ui.InfoBar>
 
-    <Button
-        android:id="@+id/doneBtn"
+    <LinearLayout
+        android:id="@+id/bottomBar"
         android:layout_height="60dp"
         android:layout_width="match_parent"
         android:layout_alignParentBottom="true"
-        android:text="End Turn"
-        android:textColor="#FFFFFF"
-        />
-    <Button
-        android:id="@+id/testBtn"
-        android:layout_height="60dp"
-        android:layout_width="60dp"
-        android:layout_alignParentBottom="true"
-        android:layout_toRightOf="@id/doneBtn"
-        android:text="Test"
-        />
+        >
+        <Button
+            android:id="@+id/doneBtn"
+            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:text="End Turn"
+            android:textColor="#FFFFFF"
+            />
+        <Button
+            android:id="@+id/testBtn"
+            android:layout_height="match_parent"
+            android:layout_width="60dp"
+            android:text="Test"
+            />
+    </LinearLayout>
+
 
 
     <com.frozen.tankbrigade.ui.GameView
@@ -48,6 +54,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/infobar"
-        android:layout_above="@id/doneBtn"
+        android:layout_above="@id/bottomBar"
         />
 </RelativeLayout>
