@@ -171,6 +171,10 @@ public class GameBoard {
 		return gameUnits.getBuildings();
 	}
 
+	public void addUnit(GameUnit unit) {
+		gameUnits.addUnit(unit);
+	}
+
 	public boolean isInBounds(int x, int y) {
 		return terrainMap.isInBounds(x,y);
 	}

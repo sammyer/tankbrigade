@@ -4,7 +4,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:layout_margin="20dp"
+    android:layout_marginLeft="20dp"
+    android:layout_marginRight="20dp"
+    android:layout_marginTop="40dp"
+    android:layout_marginBottom="40dp"
     android:background="@color/menu_bg"
     android:orientation="vertical"
     >
@@ -18,12 +21,12 @@
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             android:textColor="#FFFFFF"
-            android:textSize="36dp"
+            android:textSize="32dp"
             android:textStyle="bold"
             android:text="Factory"
             android:layout_gravity="center"
-            android:layout_marginLeft="10dp"
-            android:layout_marginRight="10dp"
+            android:layout_marginLeft="2dp"
+            android:layout_marginRight="14dp"
             />
         <RelativeLayout
             android:layout_height="match_parent"
@@ -32,18 +35,22 @@
             >
             <ImageView
                 android:id="@+id/itemCloseup"
-                android:layout_height="wrap_content"
+                android:layout_height="80dp"
                 android:layout_width="wrap_content"
                 android:layout_alignParentRight="true"
                 android:layout_alignParentTop="true"
+                android:scaleType="fitCenter"
                 />
             <TextView
                 android:id="@+id/itemName"
                 android:layout_height="wrap_content"
                 android:layout_width="wrap_content"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="8dp"
                 android:layout_alignParentLeft="true"
+                android:layout_alignParentTop="true"
                 android:layout_toRightOf="@id/itemCloseup"
-                android:textColor="#FFFFFF"
+                android:textColor="#000000"
                 android:textSize="18dp"
                 android:textStyle="bold"
                 />
@@ -53,9 +60,10 @@
                 android:layout_width="wrap_content"
                 android:layout_alignParentLeft="true"
                 android:layout_below="@id/itemName"
-                android:layout_marginTop="8dp"
-                android:textColor="#FFFFFF"
-                android:textSize="12dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginTop="20dp"
+                android:textColor="#000000"
+                android:textSize="14dp"
                 />
         </RelativeLayout>
     </LinearLayout>

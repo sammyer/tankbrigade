@@ -22,6 +22,7 @@ import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
 import com.frozen.tankbrigade.map.model.Building;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
+import com.frozen.tankbrigade.map.model.GameUnitType;
 import com.frozen.tankbrigade.map.paths.PathFinder;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.map.model.GameBoard;
@@ -37,7 +38,7 @@ import java.util.List;
  * A placeholder fragment containing a simple view.
  */
 public class BoardFragment extends Fragment implements
-		GameView.GameViewListener {
+		GameView.GameViewListener, FactoryDialogFragment.OnBuyListener {
 	private static final String TAG="BoardFragment";
 
 	private GameView gameBoardView;
@@ -86,10 +87,11 @@ public class BoardFragment extends Fragment implements
 		gameBoardView.setMap(boardModel, gameConfig);
 		gameBoardView.setListener(this);
 
-		Player player=new Player(Player.USER_ID,100);
+		Player player=new Player(Player.USER_ID,1000);
 		players.put(player.id,player);
-		player=new Player(Player.AI_ID,100);
+		player=new Player(Player.AI_ID,1000);
 		players.put(player.id,player);
+		infoBar.updatePlayers(players);
 
 		endTurnBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -154,7 +156,7 @@ public class BoardFragment extends Fragment implements
 	private void selectBuilding(Building building, Point tilePos) {
 		//TODO: fill this out
 		if (building.isFactory()&&building.ownerId==curPlayerId) {
-			openFactoryDialog(players.get(curPlayerId));
+			openFactoryDialog(players.get(curPlayerId),building);
 		} else selectTerrainAtPos(tilePos);
 	}
 
@@ -196,13 +198,26 @@ public class BoardFragment extends Fragment implements
 		gameBoardView.highlightPath(move.getPath(), move.getAttackPoint());
 	}
 
-	private void openFactoryDialog(Player player) {
+	//--------------------------------- FACTORY ---------------------------------------
+
+	private void openFactoryDialog(Player player,Building building) {
 		if (factoryDialog==null) {
 			factoryDialog=new FactoryDialogFragment();
 			factoryDialog.setGameConfig(gameConfig);
+			factoryDialog.setOnBuyListener(this);
 		}
-		factoryDialog.setPlayer(player);
-		factoryDialog.show(getActivity().getFragmentManager(),"factory");
+
+		factoryDialog.openDialog(player, building, getActivity().getFragmentManager());
+	}
+
+	@Override
+	public void onBuyUnit(Player player, Building factory, GameUnitType unitType) {
+		player.money-=unitType.price;
+		GameUnit newUnit=new GameUnit(unitType,factory.x,factory.y,player.id);
+		newUnit.movesLeft=0;
+		boardModel.addUnit(newUnit);
+		infoBar.updatePlayers(players);
+		gameBoardView.invalidate();
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------
