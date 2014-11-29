@@ -87,6 +87,8 @@ public class AIMain {
 		}
 	}
 
+	//create duplicate of move on original game board which can be applied in the game logic
+	//since AI works on a theoretical game board
 	private UnitMove moveToGameBoard(UnitMove move, GameBoard board) {
 		GameUnit unit=move.unit.getOriginalUnit();
 		GameUnit target;
@@ -94,4 +96,20 @@ public class AIMain {
 		else target=move.attackTarget.getOriginalUnit();
 		return new UnitMove(unit,move.getPath(),move.movementCost,target);
 	}
+
+	//debugging moves:
+	public void debugUnitMoves(GameBoard board,GameUnit unit) {
+		String debugTag="AI_DEBUG";
+		costAnalyzer=new CostAnalyzer(pathFinder, board,unit.ownerId);
+		SparseMap<UnitMove> moveMap=pathFinder.findLegalMoves(board,unit);
+		Log.i(debugTag,"Debugging unit "+unit.toString());
+		float highestScore=0;
+		UnitMove bestMove=null;
+		for (UnitMove move:moveMap.getAllNodes()) {
+			Log.d(debugTag,String.format("score=%.2f  a/d=%.2f/%.2f move=%s",costAnalyzer.getScore(move),
+					costAnalyzer.getDamageDone(move),costAnalyzer.getDamageTaken(move),move.toString()));
+		}
+		Log.i(debugTag,"------------------------------------------");
+	}
+
 }

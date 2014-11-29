@@ -20,9 +20,12 @@ import java.util.List;
 class CostAnalyzer {
 	private List<AttackMap> attackMaps;
 	private GameBoard gameBoard;
+	private MapAnalyzer mapAnalyzer;
 
 	public CostAnalyzer(PathFinder pathFinder, GameBoard map, int playerId) {
 		attackMaps=new ArrayList<AttackMap>();
+		mapAnalyzer=new MapAnalyzer();
+		mapAnalyzer.analyzeMap(map, playerId);
 
 		for (GameUnit unit:map.getUnits()) {
 			if (unit.ownerId==playerId) continue;
@@ -47,7 +50,11 @@ class CostAnalyzer {
 	}
 
 	public float getScore(UnitMove move) {
-		return 2.5f*getDamageDone(move)-getDamageTaken(move);
+		return 2.5f*getDamageDone(move)-getDamageTaken(move)+getMoveTowardsEnemyBonus(move);
+	}
+
+	private float getMoveTowardsEnemyBonus(UnitMove move) {
+		return (1-mapAnalyzer.ownerShip[move.x][move.y])*10;
 	}
 
 	float getDamageDone(UnitMove move) {
