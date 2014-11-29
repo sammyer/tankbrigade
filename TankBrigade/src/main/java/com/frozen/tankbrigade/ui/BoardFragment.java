@@ -42,6 +42,7 @@ public class BoardFragment extends Fragment implements
 
 	private GameView gameBoardView;
 	private InfoBar infoBar;
+	private FactoryDialogFragment factoryDialog;
 	private Button endTurnBtn;
 	private Button testBtn;
 
@@ -152,8 +153,8 @@ public class BoardFragment extends Fragment implements
 
 	private void selectBuilding(Building building, Point tilePos) {
 		//TODO: fill this out
-		if (building.isFactory()&&building.ownerId== curPlayerId) {
-			//bring up dialog
+		if (building.isFactory()&&building.ownerId==curPlayerId) {
+			openFactoryDialog(players.get(curPlayerId));
 		} else selectTerrainAtPos(tilePos);
 	}
 
@@ -193,6 +194,15 @@ public class BoardFragment extends Fragment implements
 		Log.i(TAG, "selectMove");
 		selectedMove=move;
 		gameBoardView.highlightPath(move.getPath(), move.getAttackPoint());
+	}
+
+	private void openFactoryDialog(Player player) {
+		if (factoryDialog==null) {
+			factoryDialog=new FactoryDialogFragment();
+			factoryDialog.setGameConfig(gameConfig);
+		}
+		factoryDialog.setPlayer(player);
+		factoryDialog.show(getActivity().getFragmentManager(),"factory");
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------

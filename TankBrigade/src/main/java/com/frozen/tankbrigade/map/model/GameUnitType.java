@@ -42,6 +42,8 @@ public class GameUnitType {
 	private String moveType;
 	@JsonProperty
 	public boolean canAttackAir=false;
+	@JsonProperty
+	public int price;
 
 	public GameUnitType() {
 	}

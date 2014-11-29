@@ -7,6 +7,7 @@
 		"attackType":1,
 		"defenseType":1,
 		"moveType":"foot",
+		"price":125,
 		"symbol":"C"
 	},{
 		"name":"bazooka",
@@ -16,6 +17,7 @@
 		"attackType":3,
 		"defenseType":1,
 		"moveType":"foot",
+		"price":150,
 		"symbol":"B"
 	},{
 		"name":"flak",
@@ -26,6 +28,7 @@
 		"defenseType":2,
 		"moveType":"tracked",
 		"canAttackAir":true,
+		"price":270,
 		"symbol":"F"
 	},{
 		"name":"tank",
@@ -35,6 +38,7 @@
 		"attackType":2,
 		"defenseType":2,
 		"moveType":"tracked",
+		"price":300,
 		"symbol":"T"
 	},{
 		"name":"rocket",
@@ -46,6 +50,7 @@
 		"moveType":"tracked",
 		"range":[3,5],
 		"canAttackAir":true,
+		"price":475,
 		"symbol":"R"
 	},{
 		"name":"plane",
@@ -55,6 +60,7 @@
 		"attackType":1,
 		"defenseType":1,
 		"moveType":"air",
+		"price":300,
 		"symbol":"A"
 	},{
 		"name":"bomber",
@@ -64,6 +70,7 @@
 		"attackType":3,
 		"defenseType":1,
 		"moveType":"air",
+		"price":500,
 		"symbol":"O"
 	},{
 		"name":"goliath",
@@ -73,6 +80,7 @@
 		"attackType":3,
 		"defenseType":3,
 		"moveType":"tracked",
+		"price":550,
 		"symbol":"G"
 	}
 ],"terrainTypes":[

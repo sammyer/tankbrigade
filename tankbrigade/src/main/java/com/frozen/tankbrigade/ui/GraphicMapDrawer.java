@@ -351,7 +351,7 @@ public class GraphicMapDrawer implements MapDrawer {
 		ColorMatrixColorFilter filter;
 		if (unit.ownerId== Player.USER_ID) filter=redColorFilter;
 		else filter=blueColorFilter;
-		Bitmap bitmap=terrainTiles.get(getUnitDrawable(unit.type));
+		Bitmap bitmap=terrainTiles.get(DrawableMapping.getUnitDrawable(unit.type));
 		drawUnitBitmap(canvas,bitmap,rect,unit.getAnimationPos().angle==0,filter);
 	}
 
@@ -377,22 +377,6 @@ public class GraphicMapDrawer implements MapDrawer {
 		unitDrawMatrix.postTranslate(rect.left, rect.top);
 		unitPaint.setColorFilter(filter);
 		canvas.drawBitmap(bitmap,unitDrawMatrix,unitPaint);
-	}
-
-	private int getUnitDrawable(GameUnitType unitType) {
-		switch (unitType.symbol) {
-			case GameUnitType.COMMANDO: return R.drawable.commando;
-			case GameUnitType.BAZOOKA: return R.drawable.bazooka;
-			case GameUnitType.FLAK: return R.drawable.flak;
-			case GameUnitType.TANK: return R.drawable.tank;
-			case GameUnitType.ROCKET: return R.drawable.rocket;
-			case GameUnitType.AIRPLANE: return R.drawable.fighter;
-			case GameUnitType.GOLIATH: return R.drawable.bigtank;
-			case GameUnitType.MORTAR: return R.drawable.mortar;
-			case GameUnitType.BOMBER: return R.drawable.bomber;
-		}
-		//default
-		return R.drawable.commando;
 	}
 
 	private RectF subrect2=new RectF();
