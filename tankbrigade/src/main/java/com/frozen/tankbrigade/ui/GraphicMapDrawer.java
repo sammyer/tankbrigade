@@ -21,6 +21,7 @@ import android.util.SparseArray;
 import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
+import com.frozen.tankbrigade.map.model.Building;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
@@ -128,6 +129,13 @@ public class GraphicMapDrawer implements MapDrawer {
 			}
 		}
 
+		for (Building building:map.getBuildings()) {
+			drawRect.setTilePos(building.x,building.y);
+			if (RectF.intersects(drawRect,screenRect)) {
+				drawBuilding(canvas,building,drawRect);
+			}
+		}
+
 		for (GameUnit unit:map.getUnits()) {
 			PointF unitPos=unit.getAnimationPos().point;
 			float unitPosY=unitPos.y;
@@ -188,6 +196,8 @@ public class GraphicMapDrawer implements MapDrawer {
 			bitmap=terrainTiles.get(R.drawable.mountain);
 		} else if (terrain.symbol==TerrainType.WATER||terrain.symbol==TerrainType.BRIDGE) {
 			bitmap=terrainTiles.get(R.drawable.water);
+		} else if (terrain.symbol==TerrainType.ROCKY_WATER) {
+			bitmap=terrainTiles.get(R.drawable.rocky);
 		} else if (terrain.symbol==TerrainType.BEACH) {
 			bitmap=terrainTiles.get(R.drawable.beach);
 		} else if (terrain.symbol==TerrainType.ROAD) {
@@ -377,6 +387,9 @@ public class GraphicMapDrawer implements MapDrawer {
 			case GameUnitType.TANK: return R.drawable.tank;
 			case GameUnitType.ROCKET: return R.drawable.rocket;
 			case GameUnitType.AIRPLANE: return R.drawable.fighter;
+			case GameUnitType.GOLIATH: return R.drawable.bigtank;
+			case GameUnitType.MORTAR: return R.drawable.mortar;
+			case GameUnitType.BOMBER: return R.drawable.bomber;
 		}
 		//default
 		return R.drawable.commando;
@@ -399,6 +412,33 @@ public class GraphicMapDrawer implements MapDrawer {
 		canvas.drawRect(subrect2, paint);
 
 	}
+
+	private int getBuildingDrawable(Building building) {
+		if (building.isFactory()) {
+			if (building.isOwnedBy(Player.USER_ID)) return R.drawable.factory_red;
+			else if (building.isOwnedBy(Player.AI_ID)) return R.drawable.factory_blue;
+			else return R.drawable.factory;
+		} else return R.drawable.gem;
+	}
+
+	private void drawBuilding(Canvas canvas, Building building, RectF rect) {
+		Bitmap bitmap=terrainTiles.get(getBuildingDrawable(building));
+		int w=bitmap.getWidth();
+		int h=bitmap.getHeight();
+
+		unitDrawMatrix.reset();
+		unitDrawMatrix.postTranslate(0,-w*0.45f);
+		float scale=rect.width()/w;
+		unitDrawMatrix.postScale(scale,scale);
+		unitDrawMatrix.postTranslate(rect.left, rect.top);
+
+		Paint paint=unitPaint;
+		if (building.isOil()&&building.ownerId==Player.USER_ID) paint.setColorFilter(redColorFilter);
+		else if (building.isOil()&&building.ownerId==Player.AI_ID) paint.setColorFilter(blueColorFilter);
+		else paint=null;
+		canvas.drawBitmap(bitmap,unitDrawMatrix,paint);
+	}
+
 
 	private float interpolateLevel(TerrainMap map, float x, float y) {
 		int xInt=(int)Math.floor(x);
@@ -455,8 +495,13 @@ public class GraphicMapDrawer implements MapDrawer {
 		for (int tileY=mapBounds.top;tileY<mapBounds.bottom;tileY++) {
 			for (int tileX=mapBounds.left;tileX<mapBounds.right;tileX++) {
 				drawRect.setTilePos(tileX, tileY);
-				paint.setColor(gradient.getColor(0.5f));
-				canvas.drawRect(drawRect,paint);
+				//float val=0.5f;
+				float val=BoardFragment.testMapAnalyzer.ownerShip[tileX][tileY];
+				if (val>=0){
+					paint.setColor(gradient.getColor(val));
+					paint.setAlpha(50);
+					canvas.drawRect(drawRect,paint);
+				}
 			}
 		}
 	}

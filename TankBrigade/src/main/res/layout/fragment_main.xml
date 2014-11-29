@@ -10,19 +10,45 @@
         android:id="@+id/infobar"
         android:layout_height="80dp"
         android:layout_width="match_parent"
-        android:background="#664444"
+        android:background="@color/menu_bg"
         android:layout_alignParentTop="true"
         >
-        <TextView
-            android:id="@+id/item_info"
-            android:layout_height="wrap_content"
-            android:layout_width="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:layout_centerVertical="true"
+        <LinearLayout
+            android:layout_height="match_parent"
+            android:layout_width="match_parent"
             android:layout_marginLeft="15dp"
-            android:layout_alignParentLeft="true"
-            />
+            android:layout_marginRight="15dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginBottom="5dp"
+            android:orientation="horizontal"
+            >
+            <TextView
+                android:id="@+id/item_name"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_weight="2"
+                android:textColor="#FFFFFF"
+                android:textSize="22sp"
+                />
+            <TextView
+                android:id="@+id/item_info"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_weight="3"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                />
+            <TextView
+                android:id="@+id/player_info"
+                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_weight="3"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:layout_centerVertical="true"
+                />
+
+        </LinearLayout>
     </com.frozen.tankbrigade.ui.InfoBar>
 
     <LinearLayout

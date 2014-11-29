@@ -13,4 +13,6 @@
     <color name="overlay_attack">#CCFF0000</color>
     <color name="overlay_invalid">#A0000000</color>
     <color name="overlay_selected">#CCFFFFFF</color>
+
+    <color name="menu_bg">#454e5b</color>
 </resources>

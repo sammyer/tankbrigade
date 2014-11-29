@@ -37,8 +37,8 @@ public class AStarBoardAdapter implements AStarMap {
 
 	@Override
 	public int getCost(int x, int y) {
-		//TerrainType terrain=board.getTerrain(x,y);
-		return 1;
+		TerrainType terrain=board.getTerrain(x,y);
+		return (int)Math.floor(terrain.movement);
 	}
 
 	@Override

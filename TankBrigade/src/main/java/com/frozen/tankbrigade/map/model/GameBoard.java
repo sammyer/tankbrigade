@@ -60,6 +60,10 @@ public class GameBoard {
 				parseUnits(lines,config.unitTypes);
 				continue;
 			}
+			if (line.contains("Buildings(")) {
+				parseBuildings(lines);
+				continue;
+			}
 			lines.next();
 			continue;
 		}
@@ -116,6 +120,28 @@ public class GameBoard {
 		}
 	}
 
+
+	private void parseBuildings(StringIterator lines) {
+		String line=lines.get();
+		String arg=line.substring(line.indexOf("(") + 1, line.indexOf(")"));
+		int owner=Integer.parseInt(arg);
+
+		while (lines.hasNext()) {
+			line=lines.next().trim();
+			if (line.startsWith(":")) break;
+			if (line.length()==0) continue;
+			int commapos=line.indexOf(',');
+			int dashpos=line.indexOf('-');
+			if (commapos<0||dashpos<0) continue;
+			int x=Integer.parseInt(line.substring(0,commapos).trim());
+			int y=Integer.parseInt(line.substring(commapos+1,dashpos).trim());
+			String buildingName;
+			buildingName=line.substring(dashpos+1).trim().toLowerCase();
+			Building building=new Building(buildingName,x,y,owner);
+			gameUnits.addBuilding(building);
+		}
+	}
+
 	public int width() {
 		if (terrainMap==null) return 0;
 		return terrainMap.width();
@@ -134,9 +160,15 @@ public class GameBoard {
 	public GameUnit getUnitAt(int x, int y) {
 		return gameUnits.getUnitAt(x,y);
 	}
+	public Building getBuildingAt(int x, int y) {
+		return gameUnits.getBuildingAt(x,y);
+	}
 
 	public List<GameUnit> getUnits() {
 		return gameUnits.getUnits();
+	}
+	public List<Building> getBuildings() {
+		return gameUnits.getBuildings();
 	}
 
 	public boolean isInBounds(int x, int y) {

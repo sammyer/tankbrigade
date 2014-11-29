@@ -17,6 +17,7 @@ public class TerrainType {
     public static char BRIDGE='g';
     public static char WATER='w';
     public static char BEACH='b';
+	public static char ROCKY_WATER='k';
 
 	@JsonProperty
 	public String name;
@@ -25,7 +26,7 @@ public class TerrainType {
 	@JsonProperty
     public float defense;
 	@JsonProperty
-	public int movement;
+	public float movement;
 
 	public TerrainType() {
 	}
@@ -43,7 +44,7 @@ public class TerrainType {
 	}
 
 	public int getLevel() {
-		if (symbol==BEACH||symbol==WATER||symbol==BRIDGE) return -1;
+		if (symbol==BEACH||symbol==WATER||symbol==BRIDGE||symbol==ROCKY_WATER) return -1;
 		else return 0;
 	}
 }

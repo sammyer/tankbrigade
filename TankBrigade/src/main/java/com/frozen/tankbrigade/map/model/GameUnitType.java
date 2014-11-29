@@ -12,6 +12,9 @@ public class GameUnitType {
 	public static final char TANK='T';
 	public static final char ROCKET='R';
 	public static final char AIRPLANE='A';
+	public static final char BOMBER='O';
+	public static final char GOLIATH='G';
+	public static final char MORTAR='M';
 
 	private enum MoveMode {foot,tracked,air,water};
 

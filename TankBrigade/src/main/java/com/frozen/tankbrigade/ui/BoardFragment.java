@@ -5,6 +5,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,10 +14,12 @@ import android.widget.Button;
 import com.frozen.easyjson.JSONParser;
 import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.ai.AIMain;
+import com.frozen.tankbrigade.ai.MapAnalyzer;
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
+import com.frozen.tankbrigade.map.model.Building;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.paths.PathFinder;
@@ -53,7 +56,9 @@ public class BoardFragment extends Fragment implements
 	private GameUnit selectedUnit;
 	private UnitMove selectedMove;
 	private UnitMove currentMove;
-	private int curPlayer=Player.USER_ID;
+
+	private SparseArray<Player> players=new SparseArray<Player>();
+	private int curPlayerId =Player.USER_ID;
 
 	public BoardFragment() {
 	}
@@ -72,13 +77,18 @@ public class BoardFragment extends Fragment implements
 		Log.d(TAG,"gameconfig="+configJson.toString());
 		gameConfig= JSONParser.parse(configJson,GameData.class);
 
-		String[] fileContents= FileUtils.readFileLines(getActivity(), "map1.txt");
+		String[] fileContents= FileUtils.readFileLines(getActivity(), "map2.txt");
 		boardModel =new GameBoard();
 		boardModel.parseMapFile(fileContents, gameConfig);
 		shadeMap=new short[boardModel.width()][boardModel.height()];
 		Log.d("test", "size " + boardModel.width() + "," + boardModel.height()+"  units="+ boardModel.getUnits().size());
 		gameBoardView.setMap(boardModel, gameConfig);
 		gameBoardView.setListener(this);
+
+		Player player=new Player(Player.USER_ID,100);
+		players.put(player.id,player);
+		player=new Player(Player.AI_ID,100);
+		players.put(player.id,player);
 
 		endTurnBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -96,25 +106,30 @@ public class BoardFragment extends Fragment implements
 		return rootView;
 	}
 
+	public static MapAnalyzer testMapAnalyzer=new MapAnalyzer();
 	private void onToggleTest() {
 		Log.d(TAG,"onTest - "+selectedUnit+" / "+Player.AI_ID);
 		if (selectedUnit!=null&&selectedUnit.ownerId==Player.AI_ID) {
-			ai.debugUnitMoves(boardModel,selectedUnit);
+			//ai.debugUnitMoves(boardModel,selectedUnit);
 		}
-		//gameBoardView.setTestMode(1 - gameBoardView.getTestMode());
+		testMapAnalyzer.analyzeMap(boardModel,Player.USER_ID);
+
+		gameBoardView.setTestMode(1 - gameBoardView.getTestMode());
 	}
 
 	@Override
 	public void onTileSelected(Point tilePos) {
-		GameUnit unit= boardModel.getUnitAt(tilePos.x,tilePos.y);
+		GameUnit unit= boardModel.getUnitAt(tilePos.x, tilePos.y);
 		UnitMove move=moveMap==null?null:moveMap.get(tilePos.x,tilePos.y);
 		Log.i(TAG,"onTileSelected "+tilePos+" unit="+unit+" selectedUnit="+selectedUnit);
 		//GameUnit selectedUnit=(mapPaths ==null?null: mapPaths.unit);
-		if (selectedUnit==null||selectedUnit.ownerId!=curPlayer) {
+		if (selectedUnit==null||selectedUnit.ownerId!= curPlayerId) {
 			//nothing,terrain selected or opposite player unit selected
 			deselectUnit();
-			if (unit==null) selectTerrainAtPos(tilePos);
-			else selectUnit(unit);
+			Building building=boardModel.getBuildingAt(tilePos.x,tilePos.y);
+			if (unit!=null) selectUnit(unit);
+			else if (building!=null) selectBuilding(building,tilePos);
+			else selectTerrainAtPos(tilePos);
 		} else if (selectedUnit==unit) {
 			//clicking on same unit deselects
 			deselectUnit();
@@ -135,11 +150,18 @@ public class BoardFragment extends Fragment implements
 		}
 	}
 
+	private void selectBuilding(Building building, Point tilePos) {
+		//TODO: fill this out
+		if (building.isFactory()&&building.ownerId== curPlayerId) {
+			//bring up dialog
+		} else selectTerrainAtPos(tilePos);
+	}
+
 	private void selectUnit(GameUnit unit) {
 		Log.i(TAG,"selectUnit");
 		infoBar.setUnit(unit);
 		selectedUnit=unit;
-		if (unit.ownerId==curPlayer) {
+		if (unit.ownerId== curPlayerId) {
 			selectedMove=null;
 			moveMap=pathFinder.findLegalMoves(boardModel,unit);
 			gameBoardView.clearPath();
@@ -148,7 +170,7 @@ public class BoardFragment extends Fragment implements
 	}
 	private void deselectUnit() {
 		Log.i(TAG,"deselectUnit");
-		if (selectedUnit!=null&&selectedUnit.ownerId==curPlayer) {
+		if (selectedUnit!=null&&selectedUnit.ownerId== curPlayerId) {
 			selectedMove=null;
 			moveMap=null;
 			gameBoardView.removeOverlay();
@@ -258,6 +280,7 @@ public class BoardFragment extends Fragment implements
 		for (GameUnit unit: boardModel.getUnits()) {
 			unit.startNewTurn();
 		}
+		collectMoney(curPlayerId);
 
 		aiTask=new AITask();
 		aiTask.execute();
@@ -265,10 +288,21 @@ public class BoardFragment extends Fragment implements
 
 	private void onAiDone(List<UnitMove> moves) {
 		moveAnimationQueue=moves;
+		collectMoney(Player.AI_ID);
 		if (moveAnimationQueue==null||moveAnimationQueue.isEmpty()) return;
 		executeMove(moveAnimationQueue.remove(0));
 	}
 
+	private void collectMoney(int playerId) {
+		Player player=players.get(playerId);
+		if (player==null) return;
+		for (Building building: boardModel.getBuildings()) {
+			if (building.isOwnedBy(playerId)) {
+				player.money+=building.moneyGenerated();
+			}
+		}
+		infoBar.updatePlayers(players);
+	}
 
 	private class AITask extends AsyncTask<Void,Void,List<UnitMove>> {
 
