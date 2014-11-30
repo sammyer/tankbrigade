@@ -11,6 +11,8 @@ import android.graphics.ColorMatrix;
 import android.graphics.ColorMatrixColorFilter;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PathEffect;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -47,6 +49,7 @@ public class GraphicMapDrawer implements MapDrawer {
 	private TileRect drawRect=new TileRect();
 	private RectF subrect=new RectF();
 	private Paint paint=new Paint();
+	private ColorFilters filters=new ColorFilters();
 
 	private BitmapCache terrainTiles;
 	private int moveOverlayColor=0x44FFFFFF;
@@ -55,6 +58,7 @@ public class GraphicMapDrawer implements MapDrawer {
 	private int selectedOverlayColor=0x88FFFF88;
 	private final static int tileW=100;
 	private final static int tileH=80;
+
 
 	private static class BitmapCache {
 		private SparseArray<Bitmap> bitmapCache;
@@ -130,23 +134,62 @@ public class GraphicMapDrawer implements MapDrawer {
 		Building building;
 		GameUnit unit;
 
-		paint.setStyle(Paint.Style.FILL);
-		for (int tileY=minY;tileY<maxY;tileY++) {
-			for (int tileX=minX;tileX<maxX;tileX++) {
-				drawRect.setTilePos(tileX,tileY);
-				drawTerrain(canvas, drawRect,map.terrainMap,tileX,tileY);
+		//boolean showMoves=false;
+		int shadingType;
+		ColorMatrix shading=null;
 
+		Log.i("drawMap","drawap - "+System.currentTimeMillis());
+
+		for (int tileY=minY;tileY<maxY;tileY++) {
+			//first draw terrrains for row
+			for (int tileX=minX;tileX<maxX;tileX++) {
+				if (params!=null) shadingType=params.getOverlay(tileX,tileY);
+				else shadingType=MapDrawParameters.SHADE_NONE;
+
+				if (shadingType==MapDrawParameters.SHADE_INVALID) {
+					shading=ColorFilters.darkenColorMatrix;
+				} else if (shadingType==MapDrawParameters.SHADE_ATTACK) {
+						shading=ColorFilters.redColorMatrix;
+				} else if (shadingType==MapDrawParameters.SHADE_SELECTED_UNIT) {
+					shading=ColorFilters.highlightColorMatrix;
+				} else shading=null;
+
+				drawRect.setTilePos(tileX,tileY);
+				drawTerrain(canvas, drawRect,map.terrainMap,tileX,tileY,shading);
+
+				if (shadingType==MapDrawParameters.SHADE_INVALID) {
+					shading=ColorFilters.darkenColorMatrix;
+				} else shading=null;
 				building=buildingIter.seek(tileX,tileY);
-				if (building!=null) drawBuilding(canvas, building, drawRect);
+				if (building!=null) drawBuilding(canvas, building, drawRect,shading);
+			}
+			//then draw units
+			for (int tileX=minX;tileX<maxX;tileX++) {
 
 				unit=unitIter.seek(tileX,tileY);
 				while (unit!=null) {
+					boolean moveSelected=false;
+					if (params!=null) {
+						shadingType=params.getOverlay(tileX,tileY);
+						moveSelected=params.hasSelectedMove();
+					}
+					else shadingType=MapDrawParameters.SHADE_NONE;
+
+					if (unit.movesLeft==0&&unit.ownerId==Player.USER_ID&&!unit.isAnimating()) {
+						shading=ColorFilters.darkenColorMatrix;
+					} else if (shadingType==MapDrawParameters.SHADE_INVALID) {
+						shading=ColorFilters.darkenColorMatrix;
+					} else if (moveSelected&&shadingType==MapDrawParameters.SHADE_ATTACK) {
+						shading=ColorFilters.highlightColorMatrix;
+					} else shading=null;
+
+
 					PointF unitPos=unit.getAnimationPos().point;
 					float unitPosY=unitPos.y;
 					//move unit up or down based on terrain level
 					unitPosY-=interpolateLevel(map.terrainMap,unitPos.x,unitPos.y)*0.4f;
 					drawRect.setTilePos(unitPos.x,unitPosY);
-					drawUnit(canvas,unit,drawRect);
+					drawUnit(canvas,unit,drawRect,shading);
 					if (unit.health<unit.type.health) {
 						float healthPercent=unit.health/(float)unit.type.health;
 						drawUnitHealthBar(canvas,healthPercent,drawRect);
@@ -158,20 +201,10 @@ public class GraphicMapDrawer implements MapDrawer {
 		}
 
 		if (params==null) return;
+		paint.reset();
+		paint.setStyle(Paint.Style.FILL);
 
-		if (params.showMoves()) {
-			for (int tileX=minX;tileX<maxX;tileX++) {
-				for (int tileY=minY;tileY<maxY;tileY++) {
-					drawRect.setTilePos(tileX,tileY);
-					if (tileX==params.selectedUnit.x&&tileY==params.selectedUnit.y) {
-						drawMoveOverlay(canvas, drawRect,MapDrawParameters.SHADE_SELECTED_UNIT);
-					}
-					else drawMoveOverlay(canvas, drawRect,params.getOverlay(tileX,tileY));
-				}
-			}
-		}
 		if (params.showPath()) drawPath(canvas, drawRect, params.getSelectedPath());
-		if (params.selectedAttack!=null) drawAttack(canvas,drawRect,params.selectedAttack);
 		for (MapAnimation animation:params.getAnimations()) {
 			if (animation instanceof SpriteAnimation) {
 				drawAnimation(canvas, drawRect, (SpriteAnimation) animation);
@@ -183,34 +216,26 @@ public class GraphicMapDrawer implements MapDrawer {
 	private RectF destRect=new RectF();
 	//yOffset is percentage of the tile width
 	private void drawWithOverflow(Canvas canvas, Bitmap bitmap, RectF rect, int level) {
+		drawWithOverflow(canvas, bitmap, rect, level,null);
+	}
+	private void drawWithOverflow(Canvas canvas, Bitmap bitmap, RectF rect, int level,Paint paint) {
 		srcRect.set(0,0,bitmap.getWidth()-1,bitmap.getHeight());
 		float w=rect.width();
 		float yOffset=w*(0.5f+0.4f*level);
 		destRect.set(0,0,w,w*srcRect.height()/srcRect.width());
 		destRect.offsetTo(rect.left,rect.top-yOffset);
-		canvas.drawBitmap(bitmap,srcRect,destRect,null);
+
+		canvas.drawBitmap(bitmap,srcRect,destRect,paint);
 	}
 
-	private void drawTerrain(Canvas canvas, RectF rect, TerrainMap map, int x, int y) {
+	private void drawTerrain(Canvas canvas, RectF rect, TerrainMap map, int x, int y, ColorMatrix colorMatrix) {
 		TerrainType terrain=map.getTerrain(x,y);
-		Bitmap bitmap;
-		if (terrain.symbol==TerrainType.PLAIN||terrain.symbol==TerrainType.HILL) {
-			bitmap=terrainTiles.get(R.drawable.plains);
-		} else if (terrain.symbol==TerrainType.FOREST) {
-			bitmap=terrainTiles.get(R.drawable.forest);
-		} else if (terrain.symbol==TerrainType.MOUNTAIN) {
-			bitmap=terrainTiles.get(R.drawable.mountain);
-		} else if (terrain.symbol==TerrainType.WATER||terrain.symbol==TerrainType.BRIDGE) {
-			bitmap=terrainTiles.get(R.drawable.water);
-		} else if (terrain.symbol==TerrainType.ROCKY_WATER) {
-			bitmap=terrainTiles.get(R.drawable.rocky);
-		} else if (terrain.symbol==TerrainType.BEACH) {
-			bitmap=terrainTiles.get(R.drawable.beach);
-		} else if (terrain.symbol==TerrainType.ROAD) {
-			bitmap=terrainTiles.get(getRoadTile(map,x,y));
-		} else return;
+		int resId=DrawableMapping.getTerrainDrawable(map, x, y);
+		if (resId==0) return;
+		Bitmap bitmap=terrainTiles.get(resId);
+
 		int ypos=terrain.getLevel();
-		drawWithOverflow(canvas, bitmap, rect, ypos);
+		drawWithOverflow(canvas, bitmap, rect, ypos,filters.getPaint(colorMatrix));
 
 		if (terrain.getLevel()==0) {
 			if (map.getTerrainLevel(x-1,y+1)==0&&map.getTerrainLevel(x,y+1)==-1) {
@@ -257,88 +282,34 @@ public class GraphicMapDrawer implements MapDrawer {
 			}
 		}
 		if (terrain.symbol==TerrainType.BRIDGE) {
-			if (isRoad(map,x-1,y)||isRoad(map,x+1,y)) {
-				bitmap=terrainTiles.get(R.drawable.bridge_ew);
-			}
-			else bitmap=terrainTiles.get(R.drawable.bridge_ns);
-			drawWithOverflow(canvas, bitmap, rect, 0);
-		}
-	}
-
-	private static final int[] roadTiles={
-			R.drawable.road_ew,R.drawable.road_ew,
-			R.drawable.road_ew,R.drawable.road_ew,
-			R.drawable.road_ns,R.drawable.road_sw,
-			R.drawable.road_se,R.drawable.road_sew,
-			R.drawable.road_ns,R.drawable.road_nw,
-			R.drawable.road_ne,R.drawable.road_new,
-			R.drawable.road_ns,R.drawable.road_nsw,
-			R.drawable.road_nse,R.drawable.road_nsew
-	};
-	private int getRoadTile(TerrainMap map, int x, int y) {
-		int n=isRoad(map,x,y-1)?1:0;
-		int s=isRoad(map,x,y+1)?1:0;
-		int e=isRoad(map,x+1,y)?1:0;
-		int w=isRoad(map,x-1,y)?1:0;
-		int idx=n*8+s*4+e*2+w;
-		return roadTiles[idx];
-	}
-
-	private boolean isRoad(TerrainMap map, int x, int y) {
-		if (!map.isInBounds(x,y)) return false;
-		else return map.getTerrain(x,y).isRoad();
-	}
-
-
-
-	private void drawMoveOverlay(Canvas canvas, RectF rect, int shadeId) {
-		paint.setStyle(Paint.Style.FILL);
-		if (shadeId== MapDrawParameters.SHADE_MOVE) {
-			paint.setColor(moveOverlayColor);
-			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
-		}
-		if (shadeId== MapDrawParameters.SHADE_INVALID) {
-			paint.setColor(invalidOverlayColor);
-			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
-		}
-		if (shadeId== MapDrawParameters.SHADE_ATTACK) {
-			paint.setColor(attackOverlayColor);
-			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
-		}
-		if (shadeId== MapDrawParameters.SHADE_SELECTED_UNIT) {
-			paint.setColor(selectedOverlayColor);
-			canvas.drawRect(rect.left,rect.top,rect.right,rect.bottom,paint);
+			bitmap=terrainTiles.get(DrawableMapping.getBridgeDrawable(map, x, y));
+			drawWithOverflow(canvas, bitmap, rect, 0,filters.getPaint());
 		}
 	}
 
 	private void drawPath(Canvas canvas, TileRect drawRect, Point[] pts) {
 		paint.setStyle(Paint.Style.STROKE);
-		paint.setColor(0xFF2266FF);
-		paint.setStrokeWidth(drawRect.width()/3);
+		paint.setColor(0xFF555555);
+		paint.setStrokeWidth(drawRect.width()/6);
 
-		Log.d(TAG,"drawPath "+pts);
+		//Log.d(TAG,"drawPath "+pts);
 		if (pts.length<2) return;
+
+		Path path=new Path();
+
 		drawRect.setTilePos(pts[0].x,pts[0].y);
-		float sx=drawRect.centerX();
-		float sy=drawRect.centerY();
-		float ex,ey;
+		float x=drawRect.centerX();
+		float y=drawRect.centerY();
+		path.moveTo(x,y);
 		for (int i=1;i<pts.length;i++) {
 			drawRect.setTilePos(pts[i].x,pts[i].y);
-			ex=drawRect.centerX();
-			ey=drawRect.centerY();
-			canvas.drawLine(sx,sy,ex,ey,paint);
-			sx=ex;
-			sy=ey;
+			x=drawRect.centerX();
+			y=drawRect.centerY();
+			path.lineTo(x,y);
 		}
+		canvas.drawPath(path,paint);
 	}
 
-	private void drawAttack(Canvas canvas, TileRect drawRect,Point pos) {
-		paint.setStyle(Paint.Style.STROKE);
-		paint.setColor(0xFFFF8800);
-		paint.setStrokeWidth(2);
-		drawRect.setTilePos(pos.x,pos.y);
-		canvas.drawCircle(drawRect.centerX(),drawRect.centerY(),drawRect.width()*0.45f,paint);
-	}
 
 	private void drawAnimation(Canvas canvas, TileRect drawRect,SpriteAnimation animation) {
 		Bitmap bitmap=animation.getBitmap();
@@ -353,25 +324,16 @@ public class GraphicMapDrawer implements MapDrawer {
 		canvas.drawBitmap(bitmap,srcRect,destRect,null);
 	}
 
-	private void drawUnit(Canvas canvas, GameUnit unit, RectF rect) {
-		ColorMatrixColorFilter filter;
-		if (unit.ownerId== Player.USER_ID) filter=redColorFilter;
-		else filter=blueColorFilter;
+	private void drawUnit(Canvas canvas, GameUnit unit, RectF rect,ColorMatrix colorMatrix) {
+		filters.setMatrix(colorMatrix);
+		if (unit.ownerId== Player.USER_ID) filters.addMatrix(ColorFilters.redColorMatrix);
+		else filters.addMatrix(ColorFilters.blueColorMatrix);
 		Bitmap bitmap=terrainTiles.get(DrawableMapping.getUnitDrawable(unit.type));
-		drawUnitBitmap(canvas,bitmap,rect,unit.getAnimationPos().angle==0,filter);
+		drawUnitBitmap(canvas,bitmap,rect,unit.getAnimationPos().angle==0,filters.getPaint());
 	}
 
 	private Matrix unitDrawMatrix=new Matrix();
-	private Paint unitPaint=new Paint();
-	//private static final float[] redColorFilterVals={2,0,0,0,0,0,2,0,0,-256,0,0,2,0,-256,0,0,0,1,0};
-	private static final float[] redColorFilterVals={1.5f,0,0,0,0,0,1.5f,0,0,-171,0,0,1.5f,0,-171,0,0,0,1,0};
-	private static final ColorMatrixColorFilter redColorFilter=
-			new ColorMatrixColorFilter(new ColorMatrix(redColorFilterVals));
-	//private static final float[] blueColorFilterVals={2,0,0,0,-256,0,2,0,0,-256,0,0,2,0,0,0,0,0,1,0};
-	private static final float[] blueColorFilterVals={1.5f,0,0,0,-171,0,1.5f,0,0,-171,0,0,1.5f,0,0,0,0,0,1,0};
-	private static final ColorMatrixColorFilter blueColorFilter=
-			new ColorMatrixColorFilter(new ColorMatrix(blueColorFilterVals));
-	private void drawUnitBitmap(Canvas canvas, Bitmap bitmap, RectF rect, boolean flipped, ColorFilter filter) {
+	private void drawUnitBitmap(Canvas canvas, Bitmap bitmap, RectF rect, boolean flipped, Paint unitPaint) {
 		int w=bitmap.getWidth();
 		int h=bitmap.getHeight();
 		//Log.d(TAG,"drawUnitBitmap "+w+","+h+"  rect="+rect);
@@ -379,9 +341,8 @@ public class GraphicMapDrawer implements MapDrawer {
 		unitDrawMatrix.postTranslate(0,-w*0.45f);
 		if (flipped) unitDrawMatrix.postScale(-1,1,w/2,0);
 		float scale=rect.width()/w;
-		unitDrawMatrix.postScale(scale,scale);
+		unitDrawMatrix.postScale(scale, scale);
 		unitDrawMatrix.postTranslate(rect.left, rect.top);
-		unitPaint.setColorFilter(filter);
 		canvas.drawBitmap(bitmap,unitDrawMatrix,unitPaint);
 	}
 
@@ -411,7 +372,7 @@ public class GraphicMapDrawer implements MapDrawer {
 		} else return R.drawable.gem;
 	}
 
-	private void drawBuilding(Canvas canvas, Building building, RectF rect) {
+	private void drawBuilding(Canvas canvas, Building building, RectF rect,ColorMatrix colorMatrix) {
 		Bitmap bitmap=terrainTiles.get(getBuildingDrawable(building));
 		int w=bitmap.getWidth();
 		int h=bitmap.getHeight();
@@ -422,11 +383,14 @@ public class GraphicMapDrawer implements MapDrawer {
 		unitDrawMatrix.postScale(scale, scale);
 		unitDrawMatrix.postTranslate(rect.left, rect.top);
 
-		Paint paint=unitPaint;
-		if (building.isOil()&&building.isOwnedBy(Player.USER_ID)) paint.setColorFilter(redColorFilter);
-		else if (building.isOil()&&building.isOwnedBy(Player.AI_ID)) paint.setColorFilter(blueColorFilter);
-		else paint=null;
-		canvas.drawBitmap(bitmap,unitDrawMatrix,paint);
+		filters.setMatrix(colorMatrix);
+		ColorMatrix matrix;
+		if (building.isOil()&&building.isOwnedBy(Player.USER_ID)) {
+			filters.addMatrix(ColorFilters.redColorMatrix);
+		} else if (building.isOil()&&building.isOwnedBy(Player.AI_ID)) {
+			filters.addMatrix(ColorFilters.blueColorMatrix);
+		}
+		canvas.drawBitmap(bitmap,unitDrawMatrix, filters.getPaint());
 	}
 
 

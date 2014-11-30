@@ -41,6 +41,10 @@ public class GameUnit implements Ordered2D {
 		this.animation=animation;
 	}
 
+	public boolean isAnimating() {
+		return animation!=null;
+	}
+
 	public void updateAnimationPos() {
 		if (animationPos==null) animationPos=new PosAngle(new PointF(x,y),0);
 		if (animation!=null&&animation.isAnimationComplete()) animation=null;

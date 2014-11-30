@@ -109,7 +109,7 @@ public class BasicMapDrawer implements MapDrawer {
 
 		if (params==null) return;
 
-		if (params.showMoves()) {
+		if (params.hasMoves()) {
 			for (int tileX=minX;tileX<maxX;tileX++) {
 				for (int tileY=minY;tileY<maxY;tileY++) {
 					drawRect.setTilePos(tileX,tileY);

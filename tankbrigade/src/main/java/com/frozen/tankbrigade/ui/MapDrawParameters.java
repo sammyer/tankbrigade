@@ -18,6 +18,7 @@ public class MapDrawParameters {
 	public static final short SHADE_MOVE=1;
 	public static final short SHADE_ATTACK=2;
 	public static final short SHADE_SELECTED_UNIT=3;
+	public static final short SHADE_NONE=-1;
 
 	private SparseMap<UnitMove> moveMap;
 	public Point selectedUnit;
@@ -26,12 +27,16 @@ public class MapDrawParameters {
 	private List<MapAnimation> animations=new ArrayList<MapAnimation>();
 	public int testMode=0;
 
-	public boolean showMoves() {
+	public boolean hasMoves() {
 		return moveMap!=null;
 	}
 
 	public boolean showPath() {
 		return selectedPath!=null;
+	}
+
+	public boolean hasSelectedMove() {
+		return selectedPath!=null||selectedAttack!=null;
 	}
 
 	public Point[] getSelectedPath() {
@@ -72,11 +77,28 @@ public class MapDrawParameters {
 	}
 
 	public int getOverlay(int x, int y) {
-		if (moveMap==null) return -1;
+		if (moveMap==null) return SHADE_NONE;
+		else if (hasSelectedMove()) return getSelectedPathOverlay(x,y);
+		else return getMoveSelectionOverlay(x,y);
+	}
+
+	private int getMoveSelectionOverlay(int x, int y) {
 		UnitMove move=moveMap.get(x,y);
-		if (move==null) return SHADE_INVALID;
+		if (x==selectedUnit.x&&y==selectedUnit.y) return SHADE_SELECTED_UNIT;
+		else if (move==null) return SHADE_INVALID;
 		else if (move.isAttack()) return SHADE_ATTACK;
 		else return SHADE_MOVE;
+	}
+
+	private int getSelectedPathOverlay(int x, int y) {
+		if (x==selectedUnit.x&&y==selectedUnit.y) return SHADE_SELECTED_UNIT;
+		else if (selectedAttack!=null&&selectedAttack.x==x&&selectedAttack.y==y) return SHADE_ATTACK;
+		else if (selectedPath!=null) {
+			for (Point point:selectedPath) {
+				if (point.x==x&&point.y==y) return SHADE_MOVE;
+			}
+			return SHADE_INVALID;
+		} else return SHADE_INVALID;
 	}
 
 	public MapDrawParameters clone() {
