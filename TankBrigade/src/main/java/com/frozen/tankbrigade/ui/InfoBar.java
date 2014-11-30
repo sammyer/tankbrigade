@@ -10,6 +10,7 @@ import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.map.model.TerrainType;
+import com.frozen.tankbrigade.util.MiscUtils;
 
 /**
  * Created by sam on 30/01/14.
@@ -32,12 +33,14 @@ public class InfoBar extends RelativeLayout {
 			reset();
 			return;
 		}
-		TextView info=(TextView)findViewById(R.id.item_info);
-		TextView nameView=(TextView)findViewById(R.id.item_name);
-		nameView.setText("Terrain:\n"+terrain.name);
-		info.setText(String.format("move:%.1f\ndefense:%d%%",
+		TextView info=(TextView)findViewById(R.id.itemDetails);
+		TextView info2=(TextView)findViewById(R.id.itemDetails2);
+		TextView nameView=(TextView)findViewById(R.id.itemName);
+		nameView.setText(MiscUtils.capitalize(terrain.name));
+		info.setText(String.format("Moves:%.1f\nDefense:%d%%",
 				terrain.movement,
-				Math.round(terrain.defense*100)));
+				Math.round(terrain.defense * 100)));
+		info2.setText("");
 	}
 
 	public void setUnit(GameUnit unit) {
@@ -45,25 +48,36 @@ public class InfoBar extends RelativeLayout {
 			reset();
 			return;
 		}
-		TextView info=(TextView)findViewById(R.id.item_info);
-		TextView nameView=(TextView)findViewById(R.id.item_name);
+		TextView info=(TextView)findViewById(R.id.itemDetails);
+		TextView info2=(TextView)findViewById(R.id.itemDetails2);
+		TextView nameView=(TextView)findViewById(R.id.itemName);
 		String rangeStr="";
 		if (unit.type.isRanged()) rangeStr="["+unit.type.getMinRange()+"-"+unit.type.getMaxRange()+"]";
-		nameView.setText("Unit:\n"+unit.type.name);
-		info.setText("health="+unit.health+"/"+unit.type.health+
-				"\nmoves="+unit.movesLeft+"/"+unit.type.movement+
-				"\nattack="+unit.type.damage+rangeStr);
+		nameView.setText(MiscUtils.capitalize(unit.type.name));
+		String details=String.format("Health: %d/%d\nMoves: %d/%d",
+				unit.health,unit.type.health,
+				unit.movesLeft,unit.type.movement
+				);
+		String details2=String.format("Attack: %d%s",
+				unit.type.damage,rangeStr
+				);
+		info.setText(details);
+		info2.setText(details2);
 	}
 
 	public void updatePlayers(SparseArray<Player> players) {
-		TextView playerInfo=(TextView)findViewById(R.id.player_info);
-		String s=String.format("Player 1  - money = $%d\nPlayer 2 - money = $%d",
+		TextView playerInfo=(TextView)findViewById(R.id.playerDetails);
+		String s=String.format("Player 1: $%d\nPlayer 2: $%d",
 				players.get(1).money,players.get(2).money);
 		playerInfo.setText(s);
 	}
 
 	public void reset() {
-		TextView info=(TextView)findViewById(R.id.item_info);
+		TextView info=(TextView)findViewById(R.id.itemDetails);
+		TextView nameView=(TextView)findViewById(R.id.itemName);
+		TextView info2=(TextView)findViewById(R.id.itemDetails2);
 		info.setText("");
+		info2.setText("");
+		nameView.setText("");
 	}
 }

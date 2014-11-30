@@ -21,6 +21,7 @@ import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnitType;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.ui.widget.FlowLayout;
+import com.frozen.tankbrigade.util.MiscUtils;
 
 /**
  * Created by sam on 29/11/14.
@@ -141,7 +142,7 @@ public class FactoryDialogFragment extends DialogFragment {
 	}
 
 	private void onBuy() {
-		if (listener!=null) listener.onBuyUnit(player,factory,selectedUnitType);
+		if (listener!=null) listener.onBuyUnit(player, factory, selectedUnitType);
 		dismiss();
 	}
 
@@ -160,7 +161,7 @@ public class FactoryDialogFragment extends DialogFragment {
 			buyBtn.setEnabled(false);
 		} else {
 			selectedItemImageView.setImageResource(DrawableMapping.getUnitDrawable(unitType));
-			selectedItemTitleView.setText(unitType.name);
+			selectedItemTitleView.setText(MiscUtils.capitalize(unitType.name));
 			String details;
 			if (unitType.isRanged()) {
 				details=String.format("Damage : %d[%d-%d]\nHealth : %d\nMovement : %d",

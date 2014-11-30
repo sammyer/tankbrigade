@@ -22,31 +22,67 @@
             android:layout_marginBottom="5dp"
             android:orientation="horizontal"
             >
-            <TextView
-                android:id="@+id/item_name"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_height="match_parent"
+                android:layout_width="0dp"
+                android:layout_weight="3"
+                android:orientation="horizontal"
+                >
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginRight="5dp"
+                    >
+
+                    <TextView
+                        android:id="@+id/itemName"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:layout_alignParentLeft="true"
+                        android:textColor="#FFFFFF"
+                        android:textSize="20sp"
+                        />
+                    <TextView
+                        android:id="@+id/itemDetails"
+                        android:layout_height="wrap_content"
+                        android:layout_width="wrap_content"
+                        android:layout_alignParentLeft="true"
+                        android:layout_below="@id/itemName"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        />
+                </RelativeLayout>
+                <TextView
+                    android:id="@+id/itemDetails2"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:layout_alignParentTop="true"
+                    android:layout_toRightOf="@id/itemName"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    />
+            </LinearLayout>
+
+            <View
+                android:layout_height="match_parent"
+                android:layout_width="1dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:background="#FFFFFF"
+                />
+            <RelativeLayout
+                android:layout_height="match_parent"
+                android:layout_width="0dp"
                 android:layout_weight="2"
-                android:textColor="#FFFFFF"
-                android:textSize="22sp"
-                />
-            <TextView
-                android:id="@+id/item_info"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:layout_weight="3"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                />
-            <TextView
-                android:id="@+id/player_info"
-                android:layout_height="wrap_content"
-                android:layout_width="wrap_content"
-                android:layout_weight="3"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:layout_centerVertical="true"
-                />
+                >
+                <TextView
+                    android:id="@+id/playerDetails"
+                    android:layout_height="wrap_content"
+                    android:layout_width="wrap_content"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    />
+            </RelativeLayout>
 
         </LinearLayout>
     </com.frozen.tankbrigade.ui.InfoBar>
