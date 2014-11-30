@@ -2,6 +2,7 @@ package com.frozen.tankbrigade.map.anim;
 
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.RectF;
 
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.model.GameUnit;
@@ -20,6 +21,7 @@ public class UnitAttackAnimation implements MapAnimation,PosAnimation {
 	private PointF startPos;
 	private UnitMove move;
 	public boolean isCounterAttack;
+	private RectF animationBounds;
 
 	public UnitAttackAnimation(UnitMove move,GameUnit unit) {
 		this.move=move;
@@ -28,6 +30,7 @@ public class UnitAttackAnimation implements MapAnimation,PosAnimation {
 		startPos=new PointF();
 		startPos.set(pos.point);
 		animateStartTime=System.currentTimeMillis();
+		animationBounds=new RectF(startPos.x,startPos.y-JUMP_AMT,startPos.x,startPos.y);
 	}
 
 	public UnitMove getMove() {
@@ -50,6 +53,11 @@ public class UnitAttackAnimation implements MapAnimation,PosAnimation {
 		float n=percent*2-1;
 		pos.point.y=startPos.y-(1-n*n)*JUMP_AMT;
 		return pos;
+	}
+
+	@Override
+	public RectF getAnimationBounds() {
+		return animationBounds;
 	}
 
 }

@@ -3,7 +3,7 @@ package com.frozen.tankbrigade.map.model;
 /**
  * Created by sam on 27/11/14.
  */
-public class Building {
+public class Building implements Ordered2D {
 	public String name;
 	public int x;
 	public int y;
@@ -13,6 +13,7 @@ public class Building {
 	private boolean isCapturing;
 	private int capturingPlayerId;
 	private int captureTurns=0;
+
 
 	public enum BuildingType {FACTORY,OIL,GOLD};
 
@@ -66,7 +67,22 @@ public class Building {
 		return type==BuildingType.GOLD||type==BuildingType.OIL;
 	}
 
+	@Override
+	public int getOrderX() {
+		return x;
+	}
+
+	@Override
+	public int getOrderY() {
+		return y;
+	}
+
 	public Building clone() {
 		return new Building(name,x,y,ownerId);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("[Building %s %d,%d]",name,x,y);
 	}
 }

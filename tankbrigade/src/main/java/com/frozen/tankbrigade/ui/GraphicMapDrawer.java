@@ -31,6 +31,7 @@ import com.frozen.tankbrigade.map.model.TerrainMap;
 import com.frozen.tankbrigade.map.model.TerrainType;
 import com.frozen.tankbrigade.util.ColorGradient;
 import com.frozen.tankbrigade.util.GeomUtils;
+import com.frozen.tankbrigade.util.Iterator2D;
 import com.frozen.tankbrigade.util.TileRect;
 
 /**
@@ -121,32 +122,37 @@ public class GraphicMapDrawer implements MapDrawer {
 		int minX=mapBounds.left;
 		int maxX=mapBounds.right;
 
+		for (GameUnit unitToUpdate:map.getUnits())
+			unitToUpdate.updateAnimationPos(); //rfresh animation position
+
+		Iterator2D<Building> buildingIter=new Iterator2D<Building>(map.getBuildings());
+		Iterator2D<GameUnit> unitIter=new Iterator2D<GameUnit>(map.getUnits());
+		Building building;
+		GameUnit unit;
+
 		paint.setStyle(Paint.Style.FILL);
 		for (int tileY=minY;tileY<maxY;tileY++) {
 			for (int tileX=minX;tileX<maxX;tileX++) {
 				drawRect.setTilePos(tileX,tileY);
 				drawTerrain(canvas, drawRect,map.terrainMap,tileX,tileY);
-			}
-		}
 
-		for (Building building:map.getBuildings()) {
-			drawRect.setTilePos(building.x,building.y);
-			if (RectF.intersects(drawRect,screenRect)) {
-				drawBuilding(canvas,building,drawRect);
-			}
-		}
+				building=buildingIter.seek(tileX,tileY);
+				if (building!=null) drawBuilding(canvas, building, drawRect);
 
-		for (GameUnit unit:map.getUnits()) {
-			PointF unitPos=unit.getAnimationPos().point;
-			float unitPosY=unitPos.y;
-			//move unit up or down based on terrain level
-			unitPosY-=interpolateLevel(map.terrainMap,unitPos.x,unitPos.y)*0.4f;
-			drawRect.setTilePos(unitPos.x,unitPosY);
-			if (RectF.intersects(drawRect,screenRect)) {
-				drawUnit(canvas,unit,drawRect);
-				if (unit.health<unit.type.health) {
-					float healthPercent=unit.health/(float)unit.type.health;
-					drawUnitHealthBar(canvas,healthPercent,drawRect);
+				unit=unitIter.seek(tileX,tileY);
+				while (unit!=null) {
+					PointF unitPos=unit.getAnimationPos().point;
+					float unitPosY=unitPos.y;
+					//move unit up or down based on terrain level
+					unitPosY-=interpolateLevel(map.terrainMap,unitPos.x,unitPos.y)*0.4f;
+					drawRect.setTilePos(unitPos.x,unitPosY);
+					drawUnit(canvas,unit,drawRect);
+					if (unit.health<unit.type.health) {
+						float healthPercent=unit.health/(float)unit.type.health;
+						drawUnitHealthBar(canvas,healthPercent,drawRect);
+					}
+
+					unit=unitIter.seek(tileX,tileY);
 				}
 			}
 		}
@@ -413,7 +419,7 @@ public class GraphicMapDrawer implements MapDrawer {
 		unitDrawMatrix.reset();
 		unitDrawMatrix.postTranslate(0,-w*0.45f);
 		float scale=rect.width()/w;
-		unitDrawMatrix.postScale(scale,scale);
+		unitDrawMatrix.postScale(scale, scale);
 		unitDrawMatrix.postTranslate(rect.left, rect.top);
 
 		Paint paint=unitPaint;

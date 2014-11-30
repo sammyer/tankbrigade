@@ -5,12 +5,13 @@ import android.graphics.PointF;
 import android.util.Log;
 
 import com.frozen.tankbrigade.map.anim.PosAnimation;
+import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.util.PosAngle;
 
 /**
  * Created by sam on 12/01/14.
  */
-public class GameUnit {
+public class GameUnit implements Ordered2D {
 	public GameUnitType type;
 	public int x;
 	public int y;
@@ -40,17 +41,18 @@ public class GameUnit {
 		this.animation=animation;
 	}
 
-	public PosAngle getAnimationPos() {
+	public void updateAnimationPos() {
+		if (animationPos==null) animationPos=new PosAngle(new PointF(x,y),0);
 		if (animation!=null&&animation.isAnimationComplete()) animation=null;
 		if (animation==null) {
-			if (animationPos==null) animationPos=new PosAngle(new PointF(x,y),0);
-			else {
-				animationPos.point.x=x;
-				animationPos.point.y=y;
-			}
+			animationPos.point.x=x;
+			animationPos.point.y=y;
 		}
 		else animationPos=animation.getAnimationPos();
+	}
 
+	public PosAngle getAnimationPos() {
+		if (animationPos==null) animationPos=new PosAngle(new PointF(x,y),0);
 		return animationPos;
 	}
 
@@ -90,6 +92,17 @@ public class GameUnit {
 		attacksLeft=false;
 	}
 
+
+	@Override
+	public int getOrderX() {
+		return Math.round(getAnimationPos().point.x);
+	}
+
+	@Override
+	public int getOrderY() {
+		return (int)Math.ceil(getAnimationPos().point.y);
+	}
+
 	public String toString() {
 		return "[GameUnit pos="+x+","+y+" type="+type.name+" player="+ownerId+"]";
 	}
@@ -107,4 +120,5 @@ public class GameUnit {
 		unit.originalUnit=getOriginalUnit();
 		return unit;
 	}
+
 }

@@ -2,6 +2,7 @@ package com.frozen.tankbrigade.map.anim;
 
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.RectF;
 
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.util.GeomUtils;
@@ -15,11 +16,26 @@ public class UnitAnimation implements PosAnimation,MapAnimation {
 	private long animateStartTime;
 	private Point[] path;
 	private UnitMove move;
+	private RectF animationBounds;
 
 	public UnitAnimation(UnitMove move) {
 		this.move=move;
 		this.path=move.getPath();
+		getBoundsFromPath();
 		animateStartTime=System.currentTimeMillis();
+	}
+
+	private void getBoundsFromPath() {
+		if (path.length>0) animationBounds=null;
+		animationBounds=new RectF(path[0].x,path[0].y,path[0].x,path[0].y);
+		for (int i=1;i<path.length;i++) {
+			int x=path[i].x;
+			int y=path[i].y;
+			if (x<animationBounds.left) animationBounds.left=x;
+			if (x>animationBounds.right) animationBounds.right=x;
+			if (y<animationBounds.top) animationBounds.top=y;
+			if (y>animationBounds.bottom) animationBounds.bottom=y;
+		}
 	}
 
 	public UnitMove getMove() {
@@ -57,6 +73,11 @@ public class UnitAnimation implements PosAnimation,MapAnimation {
 			return new PosAngle(GeomUtils.interpolatePoint(start,end,moveFraction),
 					GeomUtils.getSquareAngle(start,end));
 		}
+	}
+
+	@Override
+	public RectF getAnimationBounds() {
+		return animationBounds;
 	}
 
 }
