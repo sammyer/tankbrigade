@@ -115,16 +115,22 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	//handle touch events
 
-
+	private long pressTime;
+	private Point pressedTilePos;
 	@Override
 	public boolean onTouch(View view, MotionEvent motionEvent) {
 		if (!uiEnabled) return false;
 		if (transformMtx ==null) return true;
 
 		if (motionEvent.getActionMasked()==MotionEvent.ACTION_DOWN&&motionEvent.getActionIndex()==0) {
-			Point tilePos=renderer.getMapPosFromScreen(motionEvent.getX(),motionEvent.getY(), transformMtx,map);
-			if (tilePos!=null&&listener!=null) {
-				listener.onTileSelected(tilePos);
+			pressTime=System.currentTimeMillis();
+			pressedTilePos=renderer.getMapPosFromScreen(motionEvent.getX(),motionEvent.getY(), transformMtx,map);
+		}
+		if (motionEvent.getActionMasked()==MotionEvent.ACTION_UP&&motionEvent.getActionIndex()==0) {
+			long timeElapsed=System.currentTimeMillis()-pressTime;
+			if (timeElapsed<250&&pressedTilePos!=null&&listener!=null) {
+				listener.onTileSelected(pressedTilePos);
+				pressedTilePos=null;
 			}
 		}
 
