@@ -417,8 +417,8 @@ public class GraphicMapDrawer implements MapDrawer {
 		unitDrawMatrix.postTranslate(rect.left, rect.top);
 
 		Paint paint=unitPaint;
-		if (building.isOil()&&building.ownerId==Player.USER_ID) paint.setColorFilter(redColorFilter);
-		else if (building.isOil()&&building.ownerId==Player.AI_ID) paint.setColorFilter(blueColorFilter);
+		if (building.isOil()&&building.isOwnedBy(Player.USER_ID)) paint.setColorFilter(redColorFilter);
+		else if (building.isOil()&&building.isOwnedBy(Player.AI_ID)) paint.setColorFilter(blueColorFilter);
 		else paint=null;
 		canvas.drawBitmap(bitmap,unitDrawMatrix,paint);
 	}

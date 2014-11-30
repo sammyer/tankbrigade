@@ -155,7 +155,7 @@ public class BoardFragment extends Fragment implements
 
 	private void selectBuilding(Building building, Point tilePos) {
 		//TODO: fill this out
-		if (building.isFactory()&&building.ownerId==curPlayerId) {
+		if (building.isFactory()&&building.isOwnedBy(curPlayerId)) {
 			openFactoryDialog(players.get(curPlayerId),building);
 		} else selectTerrainAtPos(tilePos);
 	}
@@ -198,7 +198,7 @@ public class BoardFragment extends Fragment implements
 		gameBoardView.highlightPath(move.getPath(), move.getAttackPoint());
 	}
 
-	//--------------------------------- FACTORY ---------------------------------------
+	//--------------------------------- BUILDINGS ---------------------------------------
 
 	private void openFactoryDialog(Player player,Building building) {
 		if (factoryDialog==null) {
@@ -218,6 +218,27 @@ public class BoardFragment extends Fragment implements
 		boardModel.addUnit(newUnit);
 		infoBar.updatePlayers(players);
 		gameBoardView.invalidate();
+	}
+
+	private void captureBuildings(int playerId) {
+		for (Building building:boardModel.getBuildings()) {
+			if (building.isOwnedBy(playerId)) continue;
+			GameUnit unit=boardModel.getUnitAt(building.x,building.y);
+			if (unit==null) building.endCapture();
+			else if (unit.ownerId==playerId) building.capture(unit.ownerId);
+		}
+	}
+
+
+	private void collectMoney(int playerId) {
+		Player player=players.get(playerId);
+		if (player==null) return;
+		for (Building building: boardModel.getBuildings()) {
+			if (building.isOwnedBy(playerId)) {
+				player.money+=building.moneyGenerated();
+			}
+		}
+		infoBar.updatePlayers(players);
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------
@@ -305,6 +326,7 @@ public class BoardFragment extends Fragment implements
 		for (GameUnit unit: boardModel.getUnits()) {
 			unit.startNewTurn();
 		}
+		captureBuildings(curPlayerId);
 		collectMoney(curPlayerId);
 
 		aiTask=new AITask();
@@ -313,20 +335,10 @@ public class BoardFragment extends Fragment implements
 
 	private void onAiDone(List<UnitMove> moves) {
 		moveAnimationQueue=moves;
+		captureBuildings(Player.AI_ID);
 		collectMoney(Player.AI_ID);
 		if (moveAnimationQueue==null||moveAnimationQueue.isEmpty()) return;
 		executeMove(moveAnimationQueue.remove(0));
-	}
-
-	private void collectMoney(int playerId) {
-		Player player=players.get(playerId);
-		if (player==null) return;
-		for (Building building: boardModel.getBuildings()) {
-			if (building.isOwnedBy(playerId)) {
-				player.money+=building.moneyGenerated();
-			}
-		}
-		infoBar.updatePlayers(players);
 	}
 
 	private class AITask extends AsyncTask<Void,Void,List<UnitMove>> {

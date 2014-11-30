@@ -7,8 +7,12 @@ public class Building {
 	public String name;
 	public int x;
 	public int y;
-	public int ownerId;
 	private BuildingType type;
+	private int ownerId;
+
+	private boolean isCapturing;
+	private int capturingPlayerId;
+	private int captureTurns=0;
 
 	public enum BuildingType {FACTORY,OIL,GOLD};
 
@@ -25,7 +29,31 @@ public class Building {
 	}
 
 	public boolean isOwnedBy(int playerId) {
-		return playerId==ownerId;
+		return playerId==ownerId&&!isCapturing;
+	}
+
+	public void capture(int playerId) {
+		if (playerId==ownerId) return;
+		if (!(isCapturing&&playerId==capturingPlayerId)) {
+			startCapture(playerId);
+		}
+		captureTurns++;
+		if (captureTurns==2) {
+			ownerId=capturingPlayerId;
+			endCapture();
+		}
+	}
+
+	private void startCapture(int playerId) {
+		isCapturing=true;
+		capturingPlayerId=playerId;
+		captureTurns=0;
+	}
+
+	public void endCapture() {
+		isCapturing=false;
+		capturingPlayerId=0;
+		captureTurns=0;
 	}
 
 	public int moneyGenerated() {
