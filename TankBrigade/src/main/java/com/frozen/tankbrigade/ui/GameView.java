@@ -160,13 +160,30 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		transformMtx.postTranslate(newObjPosAndScale.getXOff(), newObjPosAndScale.getYOff());
 
 		//check if it board is not off-screen
-		if (mapTranslateBounds==null) mapTranslateBounds=new Rect(1,1,map.width()-1,map.height()-1);
-		if (!getAreaShown().intersect(renderer.getScreenBounds(mapTranslateBounds))) {
+		if (mapTranslateBounds==null) mapTranslateBounds=new Rect(-1,-1,map.width()+1,map.height()+1);
+		RectF bounds=renderer.getScreenBounds(mapTranslateBounds);
+		RectF areaShown=getAreaShown();
+		if (areaShown.width()>bounds.width()&&areaShown.height()>bounds.height()) {
 			transformMtx.set(rollbackMatrix);
 			return false;
 		}
+		float adjustX=-panAdjustment(areaShown.left,areaShown.right,bounds.left,bounds.right)*scale;
+		float adjustY=-panAdjustment(areaShown.top,areaShown.bottom,bounds.top,bounds.bottom)*scale;
+
+		transformMtx.postTranslate(adjustX,adjustY);
 
 		return true;
+	}
+
+	private float panAdjustment(float start, float end, float boundsStart, float boundsEnd) {
+		float w=end-start;
+		float bw=boundsEnd-boundsStart;
+		if (w>bw) {
+			float targetStart=boundsStart-(w-bw)*0.5f;
+			return targetStart-start;
+		} else if (start<boundsStart) return boundsStart-start;
+		else if (end>boundsEnd) return boundsEnd-end;
+		else return 0;
 	}
 
 	@Override
