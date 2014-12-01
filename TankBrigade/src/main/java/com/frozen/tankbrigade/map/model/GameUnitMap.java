@@ -1,12 +1,7 @@
 package com.frozen.tankbrigade.map.model;
 
-import android.util.Log;
-import android.util.SparseArray;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by sam on 03/03/14.
@@ -44,6 +39,27 @@ public class GameUnitMap {
 		return units;
 	}
 	public List<Building> getBuildings() {return buildings;}
+
+	//returns Player.NONE when there is no winner
+	public int getWinner() {
+		int winCandidate=Player.NONE;
+		boolean hasCandidate=false;
+		for (GameUnit unit:units) {
+			if (!hasCandidate) {
+				winCandidate=unit.ownerId;
+				hasCandidate=true;
+			} else if (unit.ownerId!=winCandidate) return Player.NONE;
+		}
+		for (Building building:buildings) {
+			if (!building.isFactory()) continue;
+			if (building.getOwnerId()==Player.NONE) continue;
+			if (!hasCandidate) {
+				winCandidate=building.getOwnerId();
+				hasCandidate=true;
+			} else if (!building.isOwnedBy(winCandidate)) return Player.NONE;
+		}
+		return winCandidate;
+	}
 
 	public GameUnitMap clone() {
 		GameUnitMap unitMap=new GameUnitMap();

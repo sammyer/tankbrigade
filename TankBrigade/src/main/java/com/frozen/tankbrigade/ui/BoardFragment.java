@@ -45,14 +45,15 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 
 	private AIMain ai=new AIMain();
 	private AITask aiTask;
-	private List<UnitMove> moveAnimationQueue;
-	private GameData gameConfig;
 	private PathFinder pathFinder=new PathFinder();
+
+	private GameData gameConfig;
 	private GameBoard boardModel;
+
+	private List<UnitMove> moveAnimationQueue;
 	private SparseMap<UnitMove> moveMap;
 	private GameUnit selectedUnit;
 	private UnitMove selectedMove;
-	private UnitMove currentMove;
 
 	private int curPlayerId =Player.USER_ID;
 
@@ -101,9 +102,13 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		boardModel=map;
 		Log.d(TAG, "Loaded map - size " + boardModel.width() + "," + boardModel.height()+"  units="+ boardModel.getUnits().size());
 
+		if (moveAnimationQueue!=null) moveAnimationQueue.clear();
+		moveMap=null;
+		selectedUnit=null;
+		selectedMove=null;
+
 		gameBoardView.setMap(boardModel, gameConfig);
 		gameBoardView.setListener(this);
-
 		infoBar.updatePlayers(boardModel.players);
 		setUiEnabled(true);
 	}
@@ -253,7 +258,6 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 
 	public void executeMove(UnitMove unitMove) {
 		Log.i(TAG,"executeMove");
-		currentMove=unitMove;
 		gameBoardView.removeOverlay();
 		gameBoardView.clearPath();
 
@@ -315,7 +319,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 
 	private void onMoveExecuted(UnitMove move) {
 		if (moveAnimationQueue==null||moveAnimationQueue.isEmpty()) {
-			setUiEnabled(true);
+			onAiTurnFinished();
 		} else {
 			executeMove(moveAnimationQueue.remove(0));
 		}
@@ -337,17 +341,25 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		captureBuildings(curPlayerId);
 		collectMoney(curPlayerId);
 
-		aiTask=new AITask();
-		aiTask.execute();
+		if (!checkWinCondition()) {
+			aiTask=new AITask();
+			aiTask.execute();
+		}
 	}
 
 	private void onAiDone(List<UnitMove> moves) {
 		moveAnimationQueue=moves;
-		captureBuildings(Player.AI_ID);
-		collectMoney(Player.AI_ID);
 		if (moveAnimationQueue==null||moveAnimationQueue.isEmpty()) return;
 		executeMove(moveAnimationQueue.remove(0));
 	}
+
+	private void onAiTurnFinished() {
+		setUiEnabled(true);
+		captureBuildings(Player.AI_ID);
+		collectMoney(Player.AI_ID);
+		checkWinCondition();
+	}
+
 
 	private class AITask extends AsyncTask<Void,Void,List<UnitMove>> {
 
@@ -363,6 +375,10 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		}
 	}
 
-
+	private boolean checkWinCondition() {
+		int winner=boardModel.gameUnits.getWinner();
+		//TODO: show win/lose screen
+		return (winner!=Player.NONE);
+	}
 
 }
