@@ -14,6 +14,9 @@ import java.util.Map;
 public class GameBoard {
     public TerrainMap terrainMap;
 	public GameUnitMap gameUnits;
+	public SparseArray<Player> players;
+
+
 
 	private static class StringIterator {
 		private String[] strings;
@@ -67,7 +70,16 @@ public class GameBoard {
 			lines.next();
 			continue;
 		}
-    }
+
+		players=new SparseArray<Player>();
+		addPlayer(Player.USER_ID,0);
+		addPlayer(Player.AI_ID,0);
+	}
+
+	private void addPlayer(int id, int money) {
+		Player player=new Player(id,money);
+		players.put(player.id,player);
+	}
 
 	private void parseTerrainMap(StringIterator lines,List<TerrainType> terrainTypes) {
 		String line=lines.get();
@@ -169,6 +181,10 @@ public class GameBoard {
 	}
 	public List<Building> getBuildings() {
 		return gameUnits.getBuildings();
+	}
+
+	public Player getPlayer(int playerId) {
+		return players.get(playerId);
 	}
 
 	public void addUnit(GameUnit unit) {

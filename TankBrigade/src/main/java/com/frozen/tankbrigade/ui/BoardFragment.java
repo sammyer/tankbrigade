@@ -5,16 +5,15 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-import com.frozen.easyjson.JSONParser;
 import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.ai.AIMain;
 import com.frozen.tankbrigade.ai.MapAnalyzer;
+import com.frozen.tankbrigade.loaders.MapLoader;
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
@@ -27,17 +26,14 @@ import com.frozen.tankbrigade.map.paths.PathFinder;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.TerrainType;
-import com.frozen.tankbrigade.util.FileUtils;
 import com.frozen.tankbrigade.util.SparseMap;
-
-import org.json.JSONObject;
 
 import java.util.List;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class BoardFragment extends Fragment implements
+public class BoardFragment extends Fragment implements MapLoader.MapLoadListener,
 		GameView.GameViewListener, FactoryDialogFragment.OnBuyListener {
 	private static final String TAG="BoardFragment";
 
@@ -54,12 +50,10 @@ public class BoardFragment extends Fragment implements
 	private PathFinder pathFinder=new PathFinder();
 	private GameBoard boardModel;
 	private SparseMap<UnitMove> moveMap;
-	private short[][] shadeMap;
 	private GameUnit selectedUnit;
 	private UnitMove selectedMove;
 	private UnitMove currentMove;
 
-	private SparseArray<Player> players=new SparseArray<Player>();
 	private int curPlayerId =Player.USER_ID;
 
 	public BoardFragment() {
@@ -75,23 +69,6 @@ public class BoardFragment extends Fragment implements
 		endTurnBtn=(Button)rootView.findViewById(R.id.doneBtn);
 		testBtn=(Button)rootView.findViewById(R.id.testBtn);
 
-		JSONObject configJson= FileUtils.readJSONFile(getActivity(), "gameconfig.json");
-		Log.d(TAG,"gameconfig="+configJson.toString());
-		gameConfig= JSONParser.parse(configJson,GameData.class);
-
-		String[] fileContents= FileUtils.readFileLines(getActivity(), "map2.txt");
-		boardModel =new GameBoard();
-		boardModel.parseMapFile(fileContents, gameConfig);
-		shadeMap=new short[boardModel.width()][boardModel.height()];
-		Log.d("test", "size " + boardModel.width() + "," + boardModel.height()+"  units="+ boardModel.getUnits().size());
-		gameBoardView.setMap(boardModel, gameConfig);
-		gameBoardView.setListener(this);
-
-		Player player=new Player(Player.USER_ID,1000);
-		players.put(player.id,player);
-		player=new Player(Player.AI_ID,1000);
-		players.put(player.id,player);
-		infoBar.updatePlayers(players);
 
 		endTurnBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
@@ -106,7 +83,29 @@ public class BoardFragment extends Fragment implements
 			}
 		});
 
+
+		//MapLoader.loadConfig(getActivity(),"gameconfig.json",this);
+		loadMap("map2.txt");
+
 		return rootView;
+	}
+
+	public void loadMap(String filename) {
+		setUiEnabled(false);
+		gameBoardView.setListener(null);
+		MapLoader.loadMap(getActivity(), gameConfig, "gameconfig.json", filename, this);
+	}
+
+	public void onMapLoaded(GameData config, GameBoard map) {
+		gameConfig=config;
+		boardModel=map;
+		Log.d(TAG, "Loaded map - size " + boardModel.width() + "," + boardModel.height()+"  units="+ boardModel.getUnits().size());
+
+		gameBoardView.setMap(boardModel, gameConfig);
+		gameBoardView.setListener(this);
+
+		infoBar.updatePlayers(boardModel.players);
+		setUiEnabled(true);
 	}
 
 	public static MapAnalyzer testMapAnalyzer=new MapAnalyzer();
@@ -154,9 +153,8 @@ public class BoardFragment extends Fragment implements
 	}
 
 	private void selectBuilding(Building building, Point tilePos) {
-		//TODO: fill this out
 		if (building.isFactory()&&building.isOwnedBy(curPlayerId)) {
-			openFactoryDialog(players.get(curPlayerId),building);
+			openFactoryDialog(boardModel.getPlayer(curPlayerId),building);
 		} else selectTerrainAtPos(tilePos);
 	}
 
@@ -216,7 +214,7 @@ public class BoardFragment extends Fragment implements
 		GameUnit newUnit=new GameUnit(unitType,factory.x,factory.y,player.id);
 		newUnit.movesLeft=0;
 		boardModel.addUnit(newUnit);
-		infoBar.updatePlayers(players);
+		infoBar.updatePlayers(boardModel.players);
 		gameBoardView.invalidate();
 	}
 
@@ -231,17 +229,27 @@ public class BoardFragment extends Fragment implements
 
 
 	private void collectMoney(int playerId) {
-		Player player=players.get(playerId);
+		Player player=boardModel.getPlayer(playerId);
 		if (player==null) return;
 		for (Building building: boardModel.getBuildings()) {
 			if (building.isOwnedBy(playerId)) {
 				player.money+=building.moneyGenerated();
 			}
 		}
-		infoBar.updatePlayers(players);
+		infoBar.updatePlayers(boardModel.players);
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------
+
+	private boolean uiEnabled=true;
+	protected void setUiEnabled(boolean enabled) {
+		uiEnabled=enabled;
+		endTurnBtn.setEnabled(enabled);
+	}
+
+	protected boolean isUiEnabled() {
+		return uiEnabled;
+	}
 
 	public void executeMove(UnitMove unitMove) {
 		Log.i(TAG,"executeMove");
@@ -261,7 +269,7 @@ public class BoardFragment extends Fragment implements
 		else if (unitMove.isAttack()) gameBoardView.animateAttack(unitMove);
 		else onMoveExecuted(unitMove);
 
-		endTurnBtn.setEnabled(false);
+		setUiEnabled(false);
 	}
 
 	@Override
@@ -307,7 +315,7 @@ public class BoardFragment extends Fragment implements
 
 	private void onMoveExecuted(UnitMove move) {
 		if (moveAnimationQueue==null||moveAnimationQueue.isEmpty()) {
-			endTurnBtn.setEnabled(true);
+			setUiEnabled(true);
 		} else {
 			executeMove(moveAnimationQueue.remove(0));
 		}
@@ -321,7 +329,7 @@ public class BoardFragment extends Fragment implements
 		moveMap=null;
 		gameBoardView.removeOverlay();
 		gameBoardView.clearPath();
-		endTurnBtn.setEnabled(false);
+		setUiEnabled(false);
 
 		for (GameUnit unit: boardModel.getUnits()) {
 			unit.startNewTurn();

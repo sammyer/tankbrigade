@@ -108,6 +108,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 			}
 		}
 
+		if (map==null) return;
 		MapDrawParameters drawParameters=this.drawParams.clone(); //to avoid concurrency issues
 		renderer.drawMap(canvas,map, transformMtx, drawParameters);
 	}

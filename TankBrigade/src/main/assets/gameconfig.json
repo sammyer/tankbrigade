@@ -60,6 +60,7 @@
 		"attackType":1,
 		"defenseType":1,
 		"moveType":"air",
+		"canAttackAir":true,
 		"price":300,
 		"symbol":"A"
 	},{

@@ -33,6 +33,11 @@ public class Building implements Ordered2D {
 		return playerId==ownerId&&!isCapturing;
 	}
 
+	public int getOwnerId() {
+		if (isCapturing) return Player.NONE;
+		else return ownerId;
+	}
+
 	public void capture(int playerId) {
 		if (playerId==ownerId) return;
 		if (!(isCapturing&&playerId==capturingPlayerId)) {
