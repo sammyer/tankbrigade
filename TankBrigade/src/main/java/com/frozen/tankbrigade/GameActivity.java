@@ -7,7 +7,10 @@ import android.view.MenuItem;
 
 import com.frozen.tankbrigade.ui.BoardFragment;
 
-public class MainActivity extends ActionBarActivity {
+public class GameActivity extends ActionBarActivity {
+	public static final String EXTRA_MAPFILE="EXTRA_MAPFILE";
+
+	private BoardFragment gameFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,9 +18,13 @@ public class MainActivity extends ActionBarActivity {
         setContentView(R.layout.activity_main);
 
         if (savedInstanceState == null) {
+			String mapFile=getIntent().getStringExtra(EXTRA_MAPFILE);
+			if (mapFile==null) gameFragment=new BoardFragment();
+			else gameFragment=new BoardFragment(mapFile);
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, new BoardFragment())
+                    .add(R.id.container, gameFragment)
                     .commit();
+
         }
     }
 

@@ -1,5 +1,6 @@
 package com.frozen.tankbrigade.ui;
 
+import android.content.Intent;
 import android.graphics.Point;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 
 import com.frozen.tankbrigade.R;
+import com.frozen.tankbrigade.WinLoseActivity;
 import com.frozen.tankbrigade.ai.AIMain;
 import com.frozen.tankbrigade.ai.MapAnalyzer;
 import com.frozen.tankbrigade.loaders.MapLoader;
@@ -56,8 +58,11 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	private UnitMove selectedMove;
 
 	private int curPlayerId =Player.USER_ID;
+	private String mapFile="map1.txt";
 
-	public BoardFragment() {
+	public BoardFragment() {}
+	public BoardFragment(String mapFile) {
+		this.mapFile=mapFile;
 	}
 
 	@Override
@@ -84,9 +89,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 			}
 		});
 
-
-		//MapLoader.loadConfig(getActivity(),"gameconfig.json",this);
-		loadMap("map2.txt");
+		loadMap(mapFile);
 
 		return rootView;
 	}
@@ -378,7 +381,11 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	private boolean checkWinCondition() {
 		int winner=boardModel.gameUnits.getWinner();
 		//TODO: show win/lose screen
-		return (winner!=Player.NONE);
+		if (winner==Player.NONE) return false;
+		Intent intent=new Intent(getActivity(), WinLoseActivity.class);
+		intent.putExtra(WinLoseActivity.EXTRA_OUTCOME,winner==curPlayerId);
+		startActivity(intent);
+		return true;
 	}
 
 }
