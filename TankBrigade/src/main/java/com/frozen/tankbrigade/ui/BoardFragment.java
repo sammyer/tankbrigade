@@ -276,6 +276,9 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		else if (unitMove.isAttack()) gameBoardView.animateAttack(unitMove);
 		else onMoveExecuted(unitMove);
 
+		selectedMove=null;
+		selectedUnit=null;
+		moveMap=null;
 		setUiEnabled(false);
 	}
 
@@ -291,8 +294,6 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 
 	private void onMoveComplete(UnitMove move) {
 		infoBar.setUnit(selectedUnit);
-		selectedMove=null;
-		selectedUnit=null;
 
 		if (move.attackTarget!=null) gameBoardView.animateAttack(move);
 		else onMoveExecuted(move);
@@ -321,8 +322,11 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	}
 
 	private void onMoveExecuted(UnitMove move) {
+		Log.d(TAG,"onMoveExecuted - owner="+move.unit.ownerId+"  queue="+(moveAnimationQueue==null?null:moveAnimationQueue.size()));
+		infoBar.setUnit(move.unit); //update infobar
 		if (moveAnimationQueue==null||moveAnimationQueue.isEmpty()) {
-			onAiTurnFinished();
+			setUiEnabled(true);
+			if (move.unit.ownerId==Player.AI_ID) onAiTurnFinished();
 		} else {
 			executeMove(moveAnimationQueue.remove(0));
 		}
@@ -357,7 +361,6 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	}
 
 	private void onAiTurnFinished() {
-		setUiEnabled(true);
 		captureBuildings(Player.AI_ID);
 		collectMoney(Player.AI_ID);
 		checkWinCondition();

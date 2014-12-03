@@ -85,7 +85,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 		synchronized (drawParams) {
 			if (drawParams!=null&&drawParams.isAnimating()) {
-				Log.d(TAG,"animation complete");
+				//Log.d(TAG,"animation complete");
 				Iterator<MapAnimation> animationIterator=drawParams.getAnimations().iterator();
 				int animCount=drawParams.getAnimations().size();
 				while (animationIterator.hasNext()) {
