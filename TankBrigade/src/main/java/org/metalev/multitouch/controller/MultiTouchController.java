@@ -325,7 +325,7 @@ public class MultiTouchController<T> {
 	// ------------------------------------------------------------------------------------
 
 	/** Start dragging/pinching, or reset drag/pinch to current point if something goes out of range */
-	private void anchorAtThisPositionAndScale() {
+	public void anchorAtThisPositionAndScale() {
         if (DEBUG)
             Log.i("MulitTouch", "anchorAtThisPositionAndScale()");
 		if (selectedObject == null)

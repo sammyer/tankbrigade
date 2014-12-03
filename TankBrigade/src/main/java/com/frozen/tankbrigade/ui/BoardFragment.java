@@ -170,7 +170,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		Log.i(TAG,"selectUnit");
 		infoBar.setUnit(unit);
 		selectedUnit=unit;
-		if (unit.ownerId== curPlayerId) {
+		if (unit.ownerId==curPlayerId&&unit.movesLeft>0) {
 			selectedMove=null;
 			moveMap=pathFinder.findLegalMoves(boardModel,unit);
 			gameBoardView.clearPath();

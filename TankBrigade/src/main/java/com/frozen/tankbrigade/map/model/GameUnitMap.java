@@ -32,7 +32,9 @@ public class GameUnitMap {
 	}
 
 	public void removeUnit(GameUnit unit) {
-		units.remove(unit);
+		synchronized (units) {
+			units.remove(unit);
+		}
 	}
 
 	public List<GameUnit> getUnits() {

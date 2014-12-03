@@ -110,9 +110,9 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 		if (map==null) return;
 		MapDrawParameters drawParameters=this.drawParams.clone(); //to avoid concurrency issues
+
 		renderer.drawMap(canvas,map, transformMtx, drawParameters);
 	}
-
 
 	//handle touch events
 
@@ -149,11 +149,12 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	public void getPositionAndScale(Object obj, PositionAndScale objPosAndScaleOut) {
 		unitRect.set(0, 0, 1, 1);
 		transformMtx.mapRect(unitRect);
+		Log.d(TAG,"getPositionAndScale");
 		objPosAndScaleOut.set(unitRect.left, unitRect.top,true, unitRect.width(),false,0,0,false,0);
 	}
 
 	private Rect mapTranslateBounds;
-	private Matrix rollbackMatrix=new Matrix();
+	private Matrix workingMatrix=new Matrix();
 	@Override
 	public boolean setPositionAndScale(Object obj, PositionAndScale newObjPosAndScale, PointInfo touchPoint) {
 		float scale=newObjPosAndScale.getScale();
@@ -161,24 +162,25 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 		if (scale<MIN_SCALE||scale>MAX_SCALE) return false;
 		if (screenRect==null) return false;
 
-		rollbackMatrix.set(transformMtx);
-		transformMtx.reset();
-		transformMtx.setScale(scale, scale);
-		transformMtx.postTranslate(newObjPosAndScale.getXOff(), newObjPosAndScale.getYOff());
+		workingMatrix.reset();
+		workingMatrix.setScale(scale, scale);
+		workingMatrix.postTranslate(newObjPosAndScale.getXOff(), newObjPosAndScale.getYOff());
 
 		//check if it board is not off-screen
 		if (mapTranslateBounds==null) mapTranslateBounds=new Rect(-1,-1,map.width()+1,map.height()+1);
 		RectF bounds=renderer.getScreenBounds(mapTranslateBounds);
-		RectF areaShown=getAreaShown();
+		RectF areaShown=getAreaShown(workingMatrix);
 		if (areaShown.width()>bounds.width()&&areaShown.height()>bounds.height()) {
-			transformMtx.set(rollbackMatrix);
 			return false;
 		}
 		float adjustX=-panAdjustment(areaShown.left,areaShown.right,bounds.left,bounds.right)*scale;
 		float adjustY=-panAdjustment(areaShown.top,areaShown.bottom,bounds.top,bounds.bottom)*scale;
 
-		transformMtx.postTranslate(adjustX,adjustY);
+		if (adjustX!=0||adjustY!=0) {
+			workingMatrix.postTranslate(adjustX,adjustY);
+		}
 
+		transformMtx.set(workingMatrix);
 		return true;
 	}
 
@@ -210,8 +212,11 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 	private Matrix inverseTransform=new Matrix();
 	private RectF areaShown=new RectF();
 	public RectF getAreaShown() {
+		return getAreaShown(transformMtx);
+	}
+	protected RectF getAreaShown(Matrix mtx) {
 		if (screenRect==null) return null;
-		transformMtx.invert(inverseTransform);
+		mtx.invert(inverseTransform);
 		inverseTransform.mapRect(areaShown,screenRect);
 		return areaShown;
 	}
@@ -304,5 +309,6 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 			moveRect.union(endRect);
 			}
 		setFocusRect(moveRect,true);
+		multitouch.anchorAtThisPositionAndScale();
 	}
 }

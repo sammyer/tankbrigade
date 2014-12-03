@@ -36,6 +36,9 @@ import com.frozen.tankbrigade.util.GeomUtils;
 import com.frozen.tankbrigade.util.Iterator2D;
 import com.frozen.tankbrigade.util.TileRect;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by sam on 12/01/14.
  */
@@ -126,8 +129,11 @@ public class GraphicMapDrawer implements MapDrawer {
 		int minX=mapBounds.left;
 		int maxX=mapBounds.right;
 
-		for (GameUnit unitToUpdate:map.getUnits())
-			unitToUpdate.updateAnimationPos(); //rfresh animation position
+		synchronized (map.getUnits()) {
+			for (GameUnit unitToUpdate:map.getUnits()) {
+				unitToUpdate.updateAnimationPos(); //rfresh animation position
+			}
+		}
 
 		Iterator2D<Building> buildingIter=new Iterator2D<Building>(map.getBuildings());
 		Iterator2D<GameUnit> unitIter=new Iterator2D<GameUnit>(map.getUnits());
@@ -137,8 +143,6 @@ public class GraphicMapDrawer implements MapDrawer {
 		//boolean showMoves=false;
 		int shadingType;
 		ColorMatrix shading=null;
-
-		Log.i("drawMap","drawap - "+System.currentTimeMillis());
 
 		for (int tileY=minY;tileY<maxY;tileY++) {
 			//first draw terrrains for row
