@@ -33,9 +33,9 @@ public class GameUnitType {
 	@JsonProperty
 	public int movement;
 	@JsonProperty
-	private int attackType=MEDIUM;
+	public int attackType=MEDIUM;
 	@JsonProperty
-	private int defenseType=MEDIUM;
+	public int defenseType=MEDIUM;
 	@JsonProperty
 	private int[] range;
 	@JsonProperty
@@ -55,8 +55,8 @@ public class GameUnitType {
 	}
 
 	public float getDamageMultiplier(GameUnitType defender) {
-		if (attackType==MEDIUM||defenseType==MEDIUM) return 1;
-		if (attackType==defenseType) return 2;
+		if (attackType==MEDIUM||defender.defenseType==MEDIUM) return 1;
+		if (attackType==defender.defenseType) return 2;
 		else return 0.5f;
 	}
 

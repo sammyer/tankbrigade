@@ -12,6 +12,8 @@ import com.frozen.tankbrigade.util.PosAngle;
  * Created by sam on 12/01/14.
  */
 public class GameUnit implements Ordered2D {
+	public static final String TAG="GameUnit";
+
 	public GameUnitType type;
 	public int x;
 	public int y;
@@ -65,8 +67,12 @@ public class GameUnit implements Ordered2D {
 	}
 
 	public int getDamageAgainst(GameUnit defender, TerrainType terrain) {
-		float damage=type.damage*type.getDamageMultiplier(defender.type);
+		float healthPercent=health/(float)type.health;
+		float damage=type.damage*healthPercent*type.getDamageMultiplier(defender.type);
 		if (!defender.type.isAir()) damage*=(1-terrain.defense);
+		Log.i(TAG,String.format("getDamage %s against %s ---- base_damage=%d att=%d def=%d mult=%.2f health=%.2f%% air=%b terrain=%.2f damage=%d",
+				toString(),defender.toString(),type.damage,type.attackType,defender.type.defenseType,
+				type.getDamageMultiplier(defender.type),healthPercent,defender.type.isAir(),1-terrain.defense,Math.round(damage)));
 		return Math.round(damage);
 	}
 
