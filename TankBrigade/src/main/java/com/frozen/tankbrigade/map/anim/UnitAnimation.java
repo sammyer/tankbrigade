@@ -4,7 +4,7 @@ import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.RectF;
 
-import com.frozen.tankbrigade.map.UnitMove;
+import com.frozen.tankbrigade.map.moves.UnitMove;
 import com.frozen.tankbrigade.util.GeomUtils;
 import com.frozen.tankbrigade.util.PosAngle;
 

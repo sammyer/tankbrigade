@@ -20,7 +20,7 @@ import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
 import com.frozen.tankbrigade.map.model.GameData;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameBoard;
-import com.frozen.tankbrigade.map.UnitMove;
+import com.frozen.tankbrigade.map.moves.UnitMove;
 import com.frozen.tankbrigade.util.SparseMap;
 
 import org.metalev.multitouch.controller.MultiTouchController;

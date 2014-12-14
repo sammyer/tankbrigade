@@ -15,4 +15,5 @@ public class Player {
 		this.id=id;
 		this.money=startingMoney;
 	}
+
 }
