@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +28,8 @@ import com.frozen.tankbrigade.util.MiscUtils;
  * Created by sam on 29/11/14.
  */
 public class FactoryDialogFragment extends DialogFragment {
+	public static final String TAG="TB.Factory";
+
 	private ImageView selectedItemImageView;
 	private TextView selectedItemTitleView;
 	private TextView selectedItemDetailsView;
@@ -126,7 +129,6 @@ public class FactoryDialogFragment extends DialogFragment {
 		TextView price=(TextView)view.findViewById(R.id.itemPrice);
 
 		btn.setImageResource(DrawableMapping.getUnitDrawable(unitType));
-		btn.setEnabled(unitType.price<=player.money);
 		price.setText(Integer.toString(unitType.price));
 
 		btn.setOnClickListener(new View.OnClickListener() {
@@ -151,6 +153,7 @@ public class FactoryDialogFragment extends DialogFragment {
 	}
 
 	private void selectUnit(GameUnitType unitType) {
+		Log.d(TAG,"selectUnit - "+selectedItemDetailsView);
 		selectedUnitType=unitType;
 		if (selectedItemDetailsView==null) return;
 
@@ -172,7 +175,8 @@ public class FactoryDialogFragment extends DialogFragment {
 						unitType.damage,unitType.health,unitType.movement);
 			}
 			selectedItemDetailsView.setText(details);
-			buyBtn.setEnabled(true);
+			boolean canAffordUnit=unitType.price<=player.money;
+			buyBtn.setEnabled(canAffordUnit);
 		}
 	}
 }
