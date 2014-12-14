@@ -21,6 +21,7 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.frozen.tankbrigade.R;
+import com.frozen.tankbrigade.debug.DebugTools;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.model.Building;
@@ -454,7 +455,7 @@ public class GraphicMapDrawer implements MapDrawer {
 			for (int tileX=mapBounds.left;tileX<mapBounds.right;tileX++) {
 				drawRect.setTilePos(tileX, tileY);
 				//float val=0.5f;
-				float val=BoardFragment.testMapAnalyzer.ownerShip[tileX][tileY];
+				float val= DebugTools.testMapAnalyzer.ownerShip[tileX][tileY];
 				if (val>=0){
 					paint.setColor(gradient.getColor(val));
 					paint.setAlpha(50);

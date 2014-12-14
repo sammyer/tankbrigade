@@ -14,13 +14,22 @@ public class PathFinder {
 	private static final String TAG = "PathFinder";
 
 	private AStar aStar;
+	private boolean isAIMode=false;
 
 	public PathFinder() {
 		aStar=new AStar();
 	}
 
+	public void setAIMode(boolean aiMode) {
+		isAIMode=aiMode;
+	}
+
 	public SparseMap<UnitMove> findLegalMoves(GameBoard board, GameUnit unit) {
 		AStarBoardAdapter boardAdapter=new AStarBoardAdapter(board,unit);
+
+		//In CostAnalyzer, when building attack maps, ignore moves left
+		boardAdapter.setIgnoreMovesLeft(isAIMode);
+
 		SparseMap<AStarNode> nodeMap=aStar.findMoves(boardAdapter,unit.x,unit.y);
 		SparseMap<UnitMove> moveMap=new SparseMap<UnitMove>(board.width(),board.height());
 		for (AStarNode node:nodeMap.getAllNodes()) {

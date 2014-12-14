@@ -15,6 +15,7 @@ import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.WinLoseActivity;
 import com.frozen.tankbrigade.ai.AIMain;
 import com.frozen.tankbrigade.ai.MapAnalyzer;
+import com.frozen.tankbrigade.debug.DebugTools;
 import com.frozen.tankbrigade.loaders.MapLoader;
 import com.frozen.tankbrigade.map.UnitMove;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
@@ -116,15 +117,20 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		setUiEnabled(true);
 	}
 
-	public static MapAnalyzer testMapAnalyzer=new MapAnalyzer();
+	private DebugTools debug=new DebugTools();
 	private void onToggleTest() {
-		Log.d(TAG,"onTest - "+selectedUnit+" / "+Player.AI_ID);
+		Log.d(TAG,"onTest - "+selectedUnit+" / "+selectedMove);
 		if (selectedUnit!=null&&selectedUnit.ownerId==Player.AI_ID) {
-			//ai.debugUnitMoves(boardModel,selectedUnit);
+			//debug.debugUnitMoves(boardModel,selectedUnit);
 		}
-		testMapAnalyzer.analyzeMap(boardModel,Player.USER_ID);
-
-		gameBoardView.setTestMode(1 - gameBoardView.getTestMode());
+		if (selectedMove!=null) {
+			debug.debugMove(boardModel,selectedMove);
+		} else if (selectedUnit!=null&&selectedUnit.ownerId==curPlayerId) {
+			selectMove(debug.debugUnitMoves(boardModel,selectedUnit,false));
+		} else {
+			DebugTools.testMapAnalyzer.analyzeMap(boardModel,Player.USER_ID);
+			gameBoardView.setTestMode(1 - gameBoardView.getTestMode());
+		}
 	}
 
 	@Override

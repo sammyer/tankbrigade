@@ -29,6 +29,7 @@ public class MapAnalyzer {
 		for (GameUnit unit:board.getUnits()) {
 			playerId=(unit.ownerId==curPlayer)?0:1;
 			astarMap=new AStarAnalyzerMap(board,unit);
+			astarMap.setIgnoreEnemyUnits(true);
 			moves=astar.findMoves(astarMap,unit.x,unit.y);
 			for (AStarNode move:moves.getAllNodes()) {
 				int unitMoves=unit.type.movement;
