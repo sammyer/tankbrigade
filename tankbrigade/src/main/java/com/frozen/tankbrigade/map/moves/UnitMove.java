@@ -1,4 +1,4 @@
-package com.frozen.tankbrigade.map;
+package com.frozen.tankbrigade.map.moves;
 
 import android.graphics.Point;
 
@@ -58,6 +58,11 @@ public class UnitMove {
 	}
 
 	public Point getEndPoint() {
+		if (path!=null&&path.length>0) return path[path.length-1];
+		else if (node!=null) return new Point(node.x,node.y);
+		else return new Point(unit.x,unit.y);
+	}
+	public Point getEndPointIfExists() {
 		if (path!=null&&path.length>0) return path[path.length-1];
 		else if (node!=null) return new Point(node.x,node.y);
 		else return null;

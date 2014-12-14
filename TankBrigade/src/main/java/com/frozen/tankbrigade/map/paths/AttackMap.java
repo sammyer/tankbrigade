@@ -1,8 +1,9 @@
 package com.frozen.tankbrigade.map.paths;
 
-import android.util.Log;
+import android.graphics.Point;
+import android.util.SparseIntArray;
 
-import com.frozen.tankbrigade.map.UnitMove;
+import com.frozen.tankbrigade.map.moves.UnitMove;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.util.SparseMap;
 
@@ -13,7 +14,8 @@ import java.util.BitSet;
  */
 public class AttackMap {
 	private GameUnit unit;
-	private BitSet bitSet;
+	private BitSet bitset;
+	private SparseIntArray attackOrigins;
 	private int w;
 	private int h;
 
@@ -21,14 +23,16 @@ public class AttackMap {
 		this.unit = unit;
 		this.w = w;
 		this.h = h;
-		bitSet=new BitSet(w*h);
+		bitset =new BitSet(w*h);
+		attackOrigins =new SparseIntArray(w*h);
 	}
 
 	public AttackMap(GameUnit unit, SparseMap<UnitMove> map) {
 		this.unit = unit;
 		w=map.width();
 		h=map.height();
-		bitSet=new BitSet(w*h);
+		bitset =new BitSet(w*h);
+		attackOrigins =new SparseIntArray(w*h);
 		setAttacks(map);
 	}
 
@@ -36,14 +40,32 @@ public class AttackMap {
 		return unit;
 	}
 
-	public void set(int x, int y) {
+	protected void set(int x, int y, int moveX, int moveY) {
 		if (!isInBounds(x,y)) return;
-		bitSet.set(y*w+x);
+		bitset.set(index(x,y));
+		attackOrigins.put(index(x, y), index(moveX, moveY));
 	}
 
 	public boolean get(int x, int y) {
 		if (!isInBounds(x,y)) return false;
-		return bitSet.get(y*w+x);
+		return bitset.get(y*w+x);
+	}
+
+	public Point getAttackOrigin(int x, int y) {
+		if (!isInBounds(x,y)) return null;
+		int attackOrigin=attackOrigins.get(index(x,y),-1);
+		if (attackOrigin==-1) return null;
+		else return indexToPoint(attackOrigin);
+	}
+
+	private int index(int x, int y) {
+		return y*w+x;
+	}
+
+	private Point indexToPoint(int idx) {
+		int x=idx%w;
+		int y=(idx-x)/w;
+		return new Point(x,y);
 	}
 
 	private boolean isInBounds(int x, int y) {
@@ -58,10 +80,10 @@ public class AttackMap {
 				if (node.getActionType()==UnitMove.MOVE) {
 					int x=node.x;
 					int y=node.y;
-					set(x+1,y);
-					set(x-1,y);
-					set(x,y+1);
-					set(x,y-1);
+					set(x+1,y,x,y);
+					set(x-1,y,x,y);
+					set(x,y+1,x,y);
+					set(x,y-1,x,y);
 				}
 			}
 		}
@@ -77,10 +99,10 @@ public class AttackMap {
 		for (int range=minRange;range<=maxRange;range++) {
 			for (int a=0;a<range;a++) {
 				int b=range-a;
-				set(x+b,y-a);
-				set(x-a,y-b);
-				set(x-b,y+a);
-				set(x+a,y+b);
+				set(x+b,y-a,x,y);
+				set(x-a,y-b,x,y);
+				set(x-b,y+a,x,y);
+				set(x+a,y+b,x,y);
 			}
 		}
 	}

@@ -69,7 +69,22 @@ public class Building implements Ordered2D {
 	}
 
 	public boolean isOil() {
+		//HACK: this is for graphic drawing - for now, use the same graphic for gold and oil
 		return type==BuildingType.GOLD||type==BuildingType.OIL;
+	}
+
+	//assign a value to the building for AI purposes
+	public int getAIValue() {
+		if (type==BuildingType.GOLD) return 400;
+		else if (type==BuildingType.OIL) return 160;
+		else return 400;
+	}
+
+	public int ownerIfOccupiedBy(int occupyingId) {
+		if (occupyingId==ownerId) return ownerId;
+		else if (occupyingId==Player.NONE) return ownerId;
+		else if (isCapturing&&occupyingId==capturingPlayerId&&captureTurns==1) return occupyingId;
+		else return Player.NONE;
 	}
 
 	@Override

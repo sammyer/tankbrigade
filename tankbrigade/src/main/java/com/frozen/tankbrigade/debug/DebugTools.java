@@ -4,7 +4,8 @@ import android.util.Log;
 
 import com.frozen.tankbrigade.ai.CostAnalyzer;
 import com.frozen.tankbrigade.ai.MapAnalyzer;
-import com.frozen.tankbrigade.map.UnitMove;
+import com.frozen.tankbrigade.map.moves.DamageInfo;
+import com.frozen.tankbrigade.map.moves.UnitMove;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.paths.PathFinder;
@@ -49,12 +50,14 @@ public class DebugTools {
 	}
 
 	private String logMove(UnitMove move) {
-		//costAnalyzer.DEBUG=true;
-		float damageDone=costAnalyzer.getDamageDone(move);
-		float damageTaken=costAnalyzer.getDamageTaken(move);
-		//costAnalyzer.DEBUG=false;
-		return String.format("score=%.2f  a/d=%.2f/%.2f bonus=%.2f move=%s",costAnalyzer.getScore(move),
-				damageDone,damageTaken,costAnalyzer.getMoveTowardsEnemyBonus(move),move.toString());
+		costAnalyzer.DEBUG=true;
+		DamageInfo damageDone=costAnalyzer.getDamageDone(move);
+		DamageInfo damageTaken=costAnalyzer.getDamageTaken(move);
+		int buildingCaptureScore=costAnalyzer.getBuildingCaptureScore(move,damageDone.isKill,damageTaken.isKill);
+		float moveBonus=costAnalyzer.getMoveTowardsEnemyBonus(move);
+		costAnalyzer.DEBUG=false;
+		return String.format("score=%.2f  attack=%s defense=%s building=%d movebonus=%.1f move=%s",costAnalyzer.getScore(move),
+				damageDone,damageTaken,buildingCaptureScore,moveBonus,move.toString());
 	}
 
 }

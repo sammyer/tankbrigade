@@ -82,15 +82,7 @@ public class GameUnit implements Ordered2D {
 
 	public boolean canAttackFrom(GameUnit defender, int attackX, int attackY) {
 		if (!attacksLeft) return false;
-		if (!type.canAttack(defender.type)) return false;
-		//manhattan distance
-		int range=Math.abs(attackX-defender.x)+Math.abs(attackY-defender.y);
-		if (type.isRanged()) {
-			if (range<type.getMinRange()||range>type.getMaxRange()) return false;
-		} else {
-			if (range!=1) return false;
-		}
-		return true;
+		return type.canAttack(defender.type,attackX,attackY,defender.x,defender.y);
 	}
 
 	public void startNewTurn() {

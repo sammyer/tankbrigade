@@ -54,6 +54,18 @@ public class GameUnitType {
 		return true;
 	}
 
+	public boolean canAttack(GameUnitType defender, int attackX, int attackY, int defendX, int defendY) {
+		if (!canAttack(defender)) return false;
+		//manhattan distance
+		int range=Math.abs(attackX-defendX)+Math.abs(attackY-defendY);
+		if (isRanged()) {
+			if (range<getMinRange()||range>getMaxRange()) return false;
+		} else {
+			if (range!=1) return false;
+		}
+		return true;
+	}
+
 	public float getDamageMultiplier(GameUnitType defender) {
 		if (attackType==MEDIUM||defender.defenseType==MEDIUM) return 1;
 		if (attackType==defender.defenseType) return 2;
@@ -74,6 +86,10 @@ public class GameUnitType {
 
 	public boolean isAir() {
 		return moveType.equals("air");
+	}
+
+	public boolean canCaptureBuildings() {
+		return !isAir();
 	}
 
 	public boolean isRanged() {

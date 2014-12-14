@@ -14,10 +14,9 @@ import android.widget.Button;
 import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.WinLoseActivity;
 import com.frozen.tankbrigade.ai.AIMain;
-import com.frozen.tankbrigade.ai.MapAnalyzer;
 import com.frozen.tankbrigade.debug.DebugTools;
 import com.frozen.tankbrigade.loaders.MapLoader;
-import com.frozen.tankbrigade.map.UnitMove;
+import com.frozen.tankbrigade.map.moves.UnitMove;
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
@@ -237,7 +236,10 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 			if (building.isOwnedBy(playerId)) continue;
 			GameUnit unit=boardModel.getUnitAt(building.x,building.y);
 			if (unit==null) building.endCapture();
-			else if (unit.ownerId==playerId) building.capture(unit.ownerId);
+			else if (unit.ownerId==playerId&&unit.type.canCaptureBuildings()) {
+				building.capture(unit.ownerId);
+			}
+			//air units cannot capture
 		}
 	}
 
