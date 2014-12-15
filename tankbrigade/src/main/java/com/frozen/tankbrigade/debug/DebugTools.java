@@ -53,10 +53,10 @@ public class DebugTools {
 		costAnalyzer.DEBUG=true;
 		DamageInfo damageDone=costAnalyzer.getDamageDone(move);
 		DamageInfo damageTaken=costAnalyzer.getDamageTaken(move);
-		int buildingCaptureScore=costAnalyzer.getBuildingCaptureScore(move,damageDone.isKill,damageTaken.isKill);
+		float buildingCaptureScore=costAnalyzer.getBuildingCaptureScore(move,damageDone.isKill,damageTaken.isKill);
 		float moveBonus=costAnalyzer.getMoveTowardsEnemyBonus(move);
 		costAnalyzer.DEBUG=false;
-		return String.format("score=%.2f  attack=%s defense=%s building=%d movebonus=%.1f move=%s",costAnalyzer.getScore(move),
+		return String.format("score=%.2f  attack=%s defense=%s building=%.1f movebonus=%.1f move=%s",costAnalyzer.getScore(move),
 				damageDone,damageTaken,buildingCaptureScore,moveBonus,move.toString());
 	}
 

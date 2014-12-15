@@ -1,5 +1,7 @@
 package com.frozen.tankbrigade.map.model;
 
+import android.util.Log;
+
 /**
  * Created by sam on 27/11/14.
  */
@@ -73,6 +75,7 @@ public class Building implements Ordered2D {
 		return type==BuildingType.GOLD||type==BuildingType.OIL;
 	}
 
+	//------ AI stuff --
 	//assign a value to the building for AI purposes
 	public int getAIValue() {
 		if (type==BuildingType.GOLD) return 400;
@@ -80,12 +83,40 @@ public class Building implements Ordered2D {
 		else return 400;
 	}
 
-	public int ownerIfOccupiedBy(int occupyingId) {
-		if (occupyingId==ownerId) return ownerId;
-		else if (occupyingId==Player.NONE) return ownerId;
-		else if (isCapturing&&occupyingId==capturingPlayerId&&captureTurns==1) return occupyingId;
-		else return Player.NONE;
+	private static final float CAPTURE_PER_TURN=0.5f;
+	public float getOwnershipAmt(int playerId) {
+		int owner;
+		float amt=1;
+		if (isCapturing) {
+			owner=capturingPlayerId;
+			amt=captureTurns*CAPTURE_PER_TURN;
+		} else {
+			owner=ownerId;
+			amt=1;
+		}
+		return Player.compare(playerId,owner)*amt;
 	}
+
+	public float getOwnershipAmtIfOccupied(int playerId, int occupyingId) {
+		int owner;
+		float amt=1;
+		if (occupyingId==ownerId||occupyingId==Player.NONE) {
+			//Log.d("I_DEBUG","getOwnership - no change - owner="+ownerId);
+			owner=ownerId;
+			amt=1;
+		}
+		else {
+			owner=occupyingId;
+			//Log.d("I_DEBUG","getOwnership - changing - owner="+ownerId+" isCapturing="+isCapturing+" capturer="+capturingPlayerId+" turns="+captureTurns);
+			if (isCapturing&&capturingPlayerId==occupyingId) {
+				amt=(captureTurns+1)*CAPTURE_PER_TURN;
+			}
+			else amt=CAPTURE_PER_TURN;
+		}
+		//Log.i("I_DEBUG","getOwnership - player="+playerId+"  owner="+owner+"  amt="+amt+"  compare="+Player.compare(playerId,owner));
+		return Player.compare(playerId,owner)*amt;
+	}
+	//-------------
 
 	@Override
 	public int getOrderX() {

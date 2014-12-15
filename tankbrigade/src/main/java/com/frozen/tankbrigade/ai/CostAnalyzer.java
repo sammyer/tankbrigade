@@ -23,6 +23,8 @@ import java.util.List;
 * Created by sam on 26/03/14.
 */
 public class CostAnalyzer {
+	private static final String DEBUG_TAG="AI_DEBUG";
+
 	private List<AttackMap> attackMaps;
 	private GameBoard gameBoard;
 	private MapAnalyzer mapAnalyzer;
@@ -50,7 +52,7 @@ public class CostAnalyzer {
 	public float getScore(UnitMove move) {
 		DamageInfo damageDone=getDamageDone(move);
 		DamageInfo damageTaken=getDamageTaken(move);
-		float score=damageDone.cost-0.4f*damageTaken.cost;
+		float score=damageDone.cost-0.8f*damageTaken.cost;
 		score+=getMoveTowardsEnemyBonus(move);
 		score+=getBuildingCaptureScore(move,damageDone.isKill,damageTaken.isKill);
 		return score;
@@ -102,7 +104,7 @@ public class CostAnalyzer {
 			//	,x,y,attackMap.get(x,y),attackMap.getUnit().type.canAttack(unit.type),attackMap.getUnit()));
 			if (attackMap.get(unitPos.x,unitPos.y)) {
 				DamageInfo damage=getDamageInfo(attackMap.getUnit(),unit,attackMap.getAttackOrigin(unitPos.x,unitPos.y),unitPos);
-				if (DEBUG) Log.d("AI_DEBUG","Damage "+attackMap.getUnit()+" vs "+unit+" = "+damage);
+				if (DEBUG) Log.d(DEBUG_TAG,"Damage "+attackMap.getUnit()+" vs "+unit+" = "+damage);
 				if (damage.damage>0&&damage.cost>0) {
 					damageList.add(damage);
 					//if (DEBUG) Log.d("AI_CostAnalyzer","adding damage against - "+attackMap.getUnit().getDamageAgainst(unit,terrain)+"  --  "+attackMap.getUnit()+" -> "+unit);
@@ -131,7 +133,7 @@ public class CostAnalyzer {
 			return new DamageInfo(defender.health,attackCost,0,0,true);
 		}
 		attackCost=damage/defender.type.health*defender.type.price;
-		if (DEBUG) Log.d("AI_DEBUG",String.format("Defender can attack? - %d,%d,%s -> %d,%d,%s = %b",
+		if (DEBUG) Log.d(DEBUG_TAG,String.format("Defender can attack? - %d,%d,%s -> %d,%d,%s = %b",
 				defx,defy,defender.type.name,attx,atty,attacker.type.name,
 				defender.type.canAttack(attacker.type,defx,defy,attx,atty)));
 		if (!defender.type.canAttack(attacker.type,defx,defy,attx,atty)) {
@@ -155,9 +157,11 @@ public class CostAnalyzer {
 		int playerId=move.unit.ownerId;
 		Point movePos;
 		if (isKilled) {
+			if (DEBUG) Log.i(DEBUG_TAG,"getBuildingCaptureScore - isKilled");
 			Building oldBuilding=gameBoard.getBuildingAt(move.unit.x,move.unit.y);
 			if (oldBuilding!=null) score+=ownershipChangeScore(oldBuilding,playerId,playerId,Player.NONE);
 		} else if (move.hasMove()&&move.unit.type.canCaptureBuildings()) {
+			if (DEBUG) Log.i(DEBUG_TAG,"getBuildingCaptureScore - move");
 			movePos=move.getEndPoint();
 			Building newBuilding=gameBoard.getBuildingAt(movePos.x,movePos.y);
 			Building oldBuilding=gameBoard.getBuildingAt(move.unit.x,move.unit.y);
@@ -165,6 +169,7 @@ public class CostAnalyzer {
 			if (newBuilding!=null) score+=ownershipChangeScore(newBuilding,playerId,Player.NONE,playerId);
 		}
 		if (move.isAttack()) {
+			if (DEBUG) Log.i(DEBUG_TAG,"getBuildingCaptureScore - attack");
 			movePos=move.getAttackPoint();
 			Building attackBuilding=gameBoard.getBuildingAt(movePos.x,movePos.y);
 			if (attackBuilding!=null) {
@@ -175,20 +180,14 @@ public class CostAnalyzer {
 		return score;
 	}
 
-	private int ownershipChangeScore(Building building, int playerId, int oldOccupier, int newOccupier) {
-		return building.getAIValue()*ownershipChange(playerId,
-				building.ownerIfOccupiedBy(oldOccupier),
-				building.ownerIfOccupiedBy(newOccupier));
-	}
-	private int ownershipChange(int playerId, int oldOwnerId, int newOwnerId) {
-		return comparePlayer(playerId,newOwnerId)-comparePlayer(playerId,oldOwnerId);
+	private float ownershipChangeScore(Building building, int playerId, int oldOccupier, int newOccupier) {
+		float oldVal=building.getOwnershipAmtIfOccupied(playerId,oldOccupier);
+		float newVal=building.getOwnershipAmtIfOccupied(playerId,newOccupier);
+		float ownershipChange=newVal-oldVal;
+		if (DEBUG) Log.d(DEBUG_TAG,String.format("bldg ownership player %d owner=%d->%d %.1f -> %.1f - %.1f",
+				playerId,oldOccupier,newOccupier,oldVal,newVal,building.getAIValue()*ownershipChange));
+		return building.getAIValue()*ownershipChange;
 	}
 
-	//returns 1 if is same player, -1 if different players, or 0 if comparing to neutral
-	public static int comparePlayer(int playerId1, int playerId2) {
-		if (playerId1==Player.NONE||playerId2==Player.NONE) return 0;
-		else if (playerId1==playerId2) return 1;
-		else return -1;
-	}
 
 }

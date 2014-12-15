@@ -16,4 +16,12 @@ public class Player {
 		this.money=startingMoney;
 	}
 
+	//returns 1 if is same player, -1 if different players, or 0 if comparing to neutral
+	public static int compare(int playerId1, int playerId2) {
+		if (playerId1==Player.NONE||playerId2==Player.NONE) return 0;
+		else if (playerId1==playerId2) return 1;
+		else return -1;
+	}
+
+
 }

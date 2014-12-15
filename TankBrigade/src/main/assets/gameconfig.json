@@ -57,7 +57,7 @@
 		"damage":30,
 		"health":50,
 		"movement":7,
-		"attackType":1,
+		"attackType":2,
 		"defenseType":1,
 		"moveType":"air",
 		"canAttackAir":true,
