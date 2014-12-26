@@ -160,7 +160,7 @@ public class GraphicMapDrawer implements MapDrawer {
 				} else shading=null;
 
 				drawRect.setTilePos(tileX,tileY);
-				drawTerrain(canvas, drawRect,map.terrainMap,tileX,tileY,shading);
+				drawTerrain(canvas, drawRect,map.getTerrainMap(),tileX,tileY,shading);
 
 				if (shadingType==MapDrawParameters.SHADE_INVALID) {
 					shading=ColorFilters.darkenColorMatrix;
@@ -192,7 +192,7 @@ public class GraphicMapDrawer implements MapDrawer {
 					PointF unitPos=unit.getAnimationPos().point;
 					float unitPosY=unitPos.y;
 					//move unit up or down based on terrain level
-					unitPosY-=interpolateLevel(map.terrainMap,unitPos.x,unitPos.y)*0.4f;
+					unitPosY-=interpolateLevel(map.getTerrainMap(),unitPos.x,unitPos.y)*0.4f;
 					drawRect.setTilePos(unitPos.x,unitPosY);
 					drawUnit(canvas,unit,drawRect,shading);
 					if (unit.health<unit.type.health) {

@@ -96,9 +96,8 @@ public class MapLoader {
 
 		private GameBoard loadMap(Context context, GameData config, String mapFile) {
 			String[] fileContents= FileUtils.readFileLines(context, mapFile);
-			GameBoard boardModel =new GameBoard();
-			boardModel.parseMapFile(fileContents, config);
-			return boardModel;
+			GameBoardParser boardParser =new GameBoardParser();
+			return boardParser.parseMapFile(fileContents, config);
 		}
 
 		@Override

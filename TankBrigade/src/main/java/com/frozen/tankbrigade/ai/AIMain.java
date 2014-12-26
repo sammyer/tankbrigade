@@ -68,19 +68,19 @@ public class AIMain {
 		}
 		if (move.attackTarget!=null) {
 			GameUnit target=move.attackTarget;
-			TerrainType terrain=board.terrainMap.getTerrain(target.x,target.y);
+			TerrainType terrain=board.getTerrain(target.x,target.y);
 			float damage=unit.getDamageAgainst(target,terrain);
 			if (damage>=target.health) {
 				target.health=0;
-				board.gameUnits.removeUnit(target);
+				board.removeUnit(target);
 			} else {
 				target.health-=damage;
 				if (move.attackTarget.canAttackFromCurrentPos(unit)) {
-					terrain=board.terrainMap.getTerrain(unit.x,unit.y);
+					terrain=board.getTerrain(unit.x,unit.y);
 					damage=target.getDamageAgainst(unit,terrain);
 					if (damage>=unit.health) {
 						unit.health=0;
-						board.gameUnits.removeUnit(unit);
+						board.removeUnit(unit);
 					} else unit.health-=damage;
 				}
 			}

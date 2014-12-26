@@ -112,7 +112,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 
 		gameBoardView.setMap(boardModel, gameConfig);
 		gameBoardView.setListener(this);
-		infoBar.updatePlayers(boardModel.players);
+		infoBar.updatePlayers(boardModel.getPlayers());
 		setUiEnabled(true);
 	}
 
@@ -227,7 +227,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		GameUnit newUnit=new GameUnit(unitType,factory.x,factory.y,player.id);
 		newUnit.movesLeft=0;
 		boardModel.addUnit(newUnit);
-		infoBar.updatePlayers(boardModel.players);
+		infoBar.updatePlayers(boardModel.getPlayers());
 		gameBoardView.invalidate();
 	}
 
@@ -252,7 +252,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 				player.money+=building.moneyGenerated();
 			}
 		}
-		infoBar.updatePlayers(boardModel.players);
+		infoBar.updatePlayers(boardModel.getPlayers());
 	}
 
 	//--------------------------------- ANIMATION ---------------------------------------
@@ -390,7 +390,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	}
 
 	private boolean checkWinCondition() {
-		int winner=boardModel.gameUnits.getWinner();
+		int winner=boardModel.getWinner();
 		//TODO: show win/lose screen
 		if (winner==Player.NONE) return false;
 		Intent intent=new Intent(getActivity(), WinLoseActivity.class);
