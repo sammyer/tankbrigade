@@ -455,7 +455,7 @@ public class GraphicMapDrawer implements MapDrawer {
 			for (int tileX=mapBounds.left;tileX<mapBounds.right;tileX++) {
 				drawRect.setTilePos(tileX, tileY);
 				//float val=0.5f;
-				float val= DebugTools.testMapAnalyzer.ownerShip[tileX][tileY];
+				float val= DebugTools.testMapAnalyzer.getMoveBonus(tileX,tileY);
 				if (val>=0){
 					paint.setColor(gradient.getColor(val));
 					paint.setAlpha(50);

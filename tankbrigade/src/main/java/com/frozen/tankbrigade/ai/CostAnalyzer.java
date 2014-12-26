@@ -32,7 +32,7 @@ public class CostAnalyzer {
 
 	public CostAnalyzer(PathFinder pathFinder, GameBoard map, int playerId) {
 		attackMaps=new ArrayList<AttackMap>();
-		mapAnalyzer=new MapAnalyzer();
+		mapAnalyzer=new ClosesUnitMapAnalyzer();
 		mapAnalyzer.analyzeMap(map, playerId);
 
 		pathFinder.setAIMode(true);
@@ -61,7 +61,7 @@ public class CostAnalyzer {
 	//---------------------------------------- UNIT ADVANCE BONUS---------------------------------------------
 
 	public float getMoveTowardsEnemyBonus(UnitMove move) {
-		return (1-mapAnalyzer.ownerShip[move.x][move.y])*10;
+		return mapAnalyzer.getMoveBonus(move.x,move.y)*10;
 	}
 
 	//-------------------------------- ATTACK/DEFENSE --------------------------------------------------

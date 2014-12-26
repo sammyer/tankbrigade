@@ -2,6 +2,7 @@ package com.frozen.tankbrigade.debug;
 
 import android.util.Log;
 
+import com.frozen.tankbrigade.ai.ClosesUnitMapAnalyzer;
 import com.frozen.tankbrigade.ai.CostAnalyzer;
 import com.frozen.tankbrigade.ai.MapAnalyzer;
 import com.frozen.tankbrigade.map.moves.DamageInfo;
@@ -15,7 +16,7 @@ import com.frozen.tankbrigade.util.SparseMap;
  * Created by sam on 04/12/14.
  */
 public class DebugTools {
-	public static MapAnalyzer testMapAnalyzer=new MapAnalyzer();
+	public static MapAnalyzer testMapAnalyzer=new ClosesUnitMapAnalyzer();
 	private CostAnalyzer costAnalyzer;
 	private PathFinder pathFinder=new PathFinder();
 	private static final String debugTag="AI_DEBUG";
