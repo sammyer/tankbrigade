@@ -26,7 +26,7 @@ import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.model.Building;
 import com.frozen.tankbrigade.map.model.GameBoard;
-import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameConfig;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameUnitType;
 import com.frozen.tankbrigade.map.model.Player;
@@ -84,7 +84,7 @@ public class GraphicMapDrawer implements MapDrawer {
 		}
 	}
 
-	public GraphicMapDrawer(Context context, GameData config) {
+	public GraphicMapDrawer(Context context, GameConfig config) {
 		terrainTiles=new BitmapCache(context.getResources());
 	}
 

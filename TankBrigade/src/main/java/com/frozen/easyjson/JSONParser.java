@@ -19,7 +19,7 @@ import android.util.Log;
 
 
 public class JSONParser {
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static final String TAG = "JSONParser";
 
 	public static <T> T parse(JSONObject obj, Class<T> clazz) {

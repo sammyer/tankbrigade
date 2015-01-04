@@ -17,7 +17,7 @@ import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
-import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameConfig;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.moves.UnitMove;
@@ -68,7 +68,7 @@ public class GameView extends BaseSurfaceView implements View.OnTouchListener,
 
 	private MultiTouchController<Object> multitouch=new MultiTouchController<Object>(this);
 
-	public void setMap(GameBoard map,GameData config) {
+	public void setMap(GameBoard map,GameConfig config) {
 		//renderer=new BasicMapDrawer(getContext(),config);
 		renderer=new GraphicMapDrawer(getContext(),config);
 		this.map=map;

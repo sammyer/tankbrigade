@@ -15,7 +15,7 @@ import android.util.SparseIntArray;
 
 import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.SpriteAnimation;
-import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameConfig;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameBoard;
 import com.frozen.tankbrigade.map.model.TerrainType;
@@ -43,7 +43,7 @@ public class BasicMapDrawer implements MapDrawer {
 	private int selectedOverlayColor=0xCCFFFFFF;
 	private final static int tileSize=50;
 
-	public BasicMapDrawer(Context context, GameData config) {
+	public BasicMapDrawer(Context context, GameConfig config) {
 		terrainColorMap=new SparseIntArray(config.terrainTypes.size());
 		for (TerrainType terrain:config.terrainTypes) {
 			String colorName="terrainColor_"+terrain.name;

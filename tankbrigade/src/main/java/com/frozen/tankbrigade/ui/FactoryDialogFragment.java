@@ -18,7 +18,7 @@ import android.widget.TextView;
 
 import com.frozen.tankbrigade.R;
 import com.frozen.tankbrigade.map.model.Building;
-import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameConfig;
 import com.frozen.tankbrigade.map.model.GameUnitType;
 import com.frozen.tankbrigade.map.model.Player;
 import com.frozen.tankbrigade.ui.widget.FlowLayout;
@@ -39,7 +39,7 @@ public class FactoryDialogFragment extends DialogFragment {
 
 	private Player player;
 	private Building factory;
-	private GameData gameData;
+	private GameConfig gameData;
 	private GameUnitType selectedUnitType;
 	private OnBuyListener listener;
 
@@ -94,7 +94,7 @@ public class FactoryDialogFragment extends DialogFragment {
 		show(fragmentManager,"factory");
 	}
 
-	public void setGameConfig(GameData gameData) {
+	public void setGameConfig(GameConfig gameData) {
 		this.gameData=gameData;
 		populateTable();
 	}
