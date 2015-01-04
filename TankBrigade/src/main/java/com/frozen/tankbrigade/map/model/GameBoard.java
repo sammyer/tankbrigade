@@ -3,6 +3,8 @@ package com.frozen.tankbrigade.map.model;
 import android.util.Log;
 import android.util.SparseArray;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -12,6 +14,7 @@ import java.util.Map;
  * Created by sam on 02/01/14.
  */
 public class GameBoard {
+	public String mapId;
     private TerrainMap terrainMap;
 	private SparseArray<Player> players=new SparseArray<Player>();
 	private List<GameUnit> units=new ArrayList<GameUnit>();
@@ -83,6 +86,10 @@ public class GameBoard {
 
 	public void addPlayer(int id, int money) {
 		Player player=new Player(id,money);
+		addPlayer(player);
+	}
+
+	public void addPlayer(Player player) {
 		players.put(player.id,player);
 	}
 
@@ -102,7 +109,7 @@ public class GameBoard {
 
 	public TerrainType getTerrain(int x, int y) {
 		if (terrainMap==null) return null;
-		return terrainMap.getTerrain(x,y);
+		return terrainMap.getTerrain(x, y);
 	}
 
 	public Player getPlayer(int playerId) {
@@ -122,6 +129,12 @@ public class GameBoard {
 		for (Building building:buildings) {
 			board.addBuilding(building.clone());
 		}
+		board.mapId=mapId;
+		for (int i=0;i<players.size();i++) {
+			board.addPlayer(players.get(players.keyAt(i)).clone());
+		}
+
 		return board;
 	}
 }
+

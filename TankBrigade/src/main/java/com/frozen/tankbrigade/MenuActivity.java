@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
+import com.frozen.tankbrigade.loaders.MapLoader;
+
 /**
  * Created by sam on 02/12/14.
  */
@@ -33,13 +35,13 @@ public class MenuActivity extends Activity {
 			}
 		});
 		View resumeBtn=findViewById(R.id.resumeBtn);
+		resumeBtn.setEnabled(MapLoader.hasSavedGame(this));
 		resumeBtn.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View view) {
 				resumeGame();
 			}
 		});
-
 	}
 
 	private void startGame(String mapFile) {
@@ -49,6 +51,8 @@ public class MenuActivity extends Activity {
 	}
 
 	private void resumeGame() {
-
+		Intent intent=new Intent(this,GameActivity.class);
+		intent.putExtra(GameActivity.EXTRA_RESTORE_GAME,true);
+		startActivity(intent);
 	}
 }

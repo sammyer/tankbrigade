@@ -21,7 +21,7 @@ import com.frozen.tankbrigade.map.anim.MapAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAnimation;
 import com.frozen.tankbrigade.map.anim.UnitAttackAnimation;
 import com.frozen.tankbrigade.map.model.Building;
-import com.frozen.tankbrigade.map.model.GameData;
+import com.frozen.tankbrigade.map.model.GameConfig;
 import com.frozen.tankbrigade.map.model.GameUnit;
 import com.frozen.tankbrigade.map.model.GameUnitType;
 import com.frozen.tankbrigade.map.paths.PathFinder;
@@ -49,8 +49,10 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	private AITask aiTask;
 	private PathFinder pathFinder=new PathFinder();
 
-	private GameData gameConfig;
+	private GameConfig gameConfig;
 	private GameBoard boardModel;
+	//for saving purposes ... create a snapshop of the board at the beginning of each turn
+	private GameBoard boardSnapshot;
 
 	private List<UnitMove> moveAnimationQueue;
 	private SparseMap<UnitMove> moveMap;
@@ -58,11 +60,13 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	private UnitMove selectedMove;
 
 	private int curPlayerId =Player.USER_ID;
-	private String mapFile="map1.txt";
+	private String mapFile;
+	private boolean restoreGameOnLoad=false;
 
 	public BoardFragment() {}
-	public BoardFragment(String mapFile) {
+	public BoardFragment(String mapFile,boolean restoreGameOnLoad) {
 		this.mapFile=mapFile;
+		this.restoreGameOnLoad=restoreGameOnLoad;
 	}
 
 	@Override
@@ -89,7 +93,8 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 			}
 		});
 
-		loadMap(mapFile);
+		if (restoreGameOnLoad) loadSavedGame(mapFile);
+		else loadMap(mapFile);
 
 		return rootView;
 	}
@@ -97,12 +102,25 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	public void loadMap(String filename) {
 		setUiEnabled(false);
 		gameBoardView.setListener(null);
-		MapLoader.loadMap(getActivity(), gameConfig, "gameconfig.json", filename, this);
+		MapLoader.loadMap(getActivity(), filename, this);
 	}
 
-	public void onMapLoaded(GameData config, GameBoard map) {
+	public void loadSavedGame(String filename) {
+		setUiEnabled(false);
+		gameBoardView.setListener(null);
+		if (filename==null) MapLoader.restoreGame(getActivity(), this);
+		else MapLoader.restoreGame(getActivity(),filename,this);
+	}
+
+	public void onMapLoaded(GameConfig config, GameBoard map) {
 		gameConfig=config;
+		if (map==null) {
+			Log.w(TAG,"onMapLoaded - map is null!");
+			getActivity().finish();
+			return;
+		}
 		boardModel=map;
+		boardSnapshot=map.clone();
 		Log.d(TAG, "Loaded map - size " + boardModel.width() + "," + boardModel.height()+"  units="+ boardModel.getUnits().size());
 
 		if (moveAnimationQueue!=null) moveAnimationQueue.clear();
@@ -114,6 +132,10 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 		gameBoardView.setListener(this);
 		infoBar.updatePlayers(boardModel.getPlayers());
 		setUiEnabled(true);
+	}
+
+	public GameBoard getBoardToSave() {
+		return boardSnapshot;
 	}
 
 	private DebugTools debug=new DebugTools();
@@ -343,6 +365,7 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	//------------------------------------------------------------------------
 
 	private void onEndTurn() {
+		Log.d(TAG,"onEndTurn");
 		selectedUnit=null;
 		selectedMove=null;
 		moveMap=null;
@@ -369,9 +392,11 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	}
 
 	private void onAiTurnFinished() {
+		Log.d(TAG,"onAiTurnFinished");
 		captureBuildings(Player.AI_ID);
 		collectMoney(Player.AI_ID);
 		checkWinCondition();
+		boardSnapshot=boardModel.clone();
 	}
 
 
@@ -390,8 +415,8 @@ public class BoardFragment extends Fragment implements MapLoader.MapLoadListener
 	}
 
 	private boolean checkWinCondition() {
+		Log.d(TAG,"checkWinCondition");
 		int winner=boardModel.getWinner();
-		//TODO: show win/lose screen
 		if (winner==Player.NONE) return false;
 		Intent intent=new Intent(getActivity(), WinLoseActivity.class);
 		intent.putExtra(WinLoseActivity.EXTRA_OUTCOME,winner==curPlayerId);

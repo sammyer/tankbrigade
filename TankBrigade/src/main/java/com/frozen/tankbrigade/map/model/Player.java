@@ -23,5 +23,7 @@ public class Player {
 		else return -1;
 	}
 
-
+	public Player clone() {
+		return new Player(id,money);
+	}
 }

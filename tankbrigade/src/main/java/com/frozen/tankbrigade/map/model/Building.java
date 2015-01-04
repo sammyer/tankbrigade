@@ -2,6 +2,9 @@ package com.frozen.tankbrigade.map.model;
 
 import android.util.Log;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * Created by sam on 27/11/14.
  */
@@ -24,6 +27,16 @@ public class Building implements Ordered2D {
 		this.x = x;
 		this.y = y;
 		this.ownerId = ownerId;
+		type=BuildingType.valueOf(name.toUpperCase());
+	}
+	public Building(String name, int x, int y, int ownerId, int occupyingId, int numTurns) {
+		this.name = name;
+		this.x = x;
+		this.y = y;
+		this.ownerId = ownerId;
+		this.capturingPlayerId=occupyingId;
+		this.captureTurns=numTurns;
+		isCapturing=true;
 		type=BuildingType.valueOf(name.toUpperCase());
 	}
 
@@ -116,6 +129,12 @@ public class Building implements Ordered2D {
 		//Log.i("I_DEBUG","getOwnership - player="+playerId+"  owner="+owner+"  amt="+amt+"  compare="+Player.compare(playerId,owner));
 		return Player.compare(playerId,owner)*amt;
 	}
+	//-------------
+
+	public boolean getIsCapturing() { return isCapturing; }
+	public int getOldOwnerId() {return ownerId; }
+	public int getOccupyingOwnerId() {return capturingPlayerId; }
+	public int getCaptureTurns() {return captureTurns; }
 	//-------------
 
 	@Override
