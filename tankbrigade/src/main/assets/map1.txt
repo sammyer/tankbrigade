@@ -1,0 +1,32 @@
+:Map(10,10):
+
+mppffhppfm
+fhrrrpfrrr
+prrbrrrrpf
+prwwwwwpfh
+wgwfwfwwww
+prrrwrrgfp
+rrbrgrwwpp
+rpwwwwwmpf
+rrprgrmmph
+frrrwrmpfp
+
+:Units(1):
+
+8,1 - tank
+7,2 - tank
+8,2 - tank
+9,2 - tank
+7,3 - rocket
+8,3 - rocket
+9,3 - rocket
+
+:Units(2):
+2,9 - commando
+3,9 - bazooka
+4,8 - flak
+5,9 - commando
+7,9 - tank
+8,8 - tank
+8,9 - flak
+9,9 - tank
